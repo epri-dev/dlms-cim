@@ -1,0 +1,3 @@
+[submodule "DLMS-COSEM"]
+	path = DLMS-COSEM
+	url = git@github.com:epri-dev/DLMS-COSEM.git
