@@ -21,6 +21,7 @@ Release
 *.old
 VisualGDBCache
 CodeDB
+build
 
 # editor files
 *.swp
