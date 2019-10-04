@@ -70,49 +70,62 @@
 // DEALINGS IN THE SOFTWARE.
 // 
 
-#pragma once
-
-#include "COSEM.h"
-#include "COSEMDevice.h"
-#include "COSEMEngine.h"
-#include "interfaces/IData.h"
-#include "interfaces/IClock.h"
-#include "LinuxClock.h"
+#include "LinuxCOSEMServer.h"
+#include "COSEMAddress.h"
 #include "LinuxData.h"
 
 namespace EPRI
 {
-    class LinuxManagementDevice : public COSEMServer
+    //
+    // Data
+    //
+    LinuxData::LinuxData()
+        : IDataObject({ 0, 0, 96, 1, {0, 9}, 255 })
     {
-    public:
-        LinuxManagementDevice();
-        virtual ~LinuxManagementDevice();
-        
-    protected:
-        LinuxClock  m_Clock;
-        LinuxData   m_Data;
+        for (int Index = 0; Index < 10; ++Index)
+        {
+            m_Values[Index] = "LINUXDATA" + std::to_string(Index);
+        }
+    }
 
-    };
-    
-    class LinuxCOSEMDevice : public COSEMDevice
+    APDUConstants::Data_Access_Result LinuxData::InternalGet(const AssociationContext& Context,
+        ICOSEMAttribute * pAttribute, 
+        const Cosem_Attribute_Descriptor& Descriptor, 
+        SelectiveAccess * pSelectiveAccess)
     {
-    public:
-        LinuxCOSEMDevice();
-        virtual ~LinuxCOSEMDevice();
-        
-    protected:
-        LinuxManagementDevice m_Management;
-        
-    };
+        pAttribute->SelectChoice(COSEMDataType::VISIBLE_STRING);
+        pAttribute->Append(m_Values[Descriptor.instance_id.GetValueGroup(EPRI::COSEMObjectInstanceID::VALUE_GROUP_E)]);
+        return APDUConstants::Data_Access_Result::success;
+    }
     
-    class LinuxCOSEMServerEngine : public COSEMServerEngine
+    APDUConstants::Data_Access_Result LinuxData::InternalSet(const AssociationContext& Context,
+        ICOSEMAttribute * pAttribute, 
+        const Cosem_Attribute_Descriptor& Descriptor, 
+        const DLMSVector& Data,
+        SelectiveAccess * pSelectiveAccess)
     {
-    public:
-        LinuxCOSEMServerEngine() = delete;
-        LinuxCOSEMServerEngine(const Options& Opt, Transport * pXPort);
-        virtual ~LinuxCOSEMServerEngine();
-        
-    protected:
-        LinuxCOSEMDevice    m_Device;
-    };
+        APDUConstants::Data_Access_Result RetVal = APDUConstants::Data_Access_Result::temporary_failure;
+        try
+        {
+            DLMSValue Value;
+            
+            RetVal = ICOSEMObject::InternalSet(Context, pAttribute, Descriptor, Data, pSelectiveAccess);
+            if (APDUConstants::Data_Access_Result::success == RetVal &&
+                pAttribute->GetNextValue(&Value) == COSEMType::GetNextResult::VALUE_RETRIEVED)
+            {
+                m_Values[Descriptor.instance_id.GetValueGroup(EPRI::COSEMObjectInstanceID::VALUE_GROUP_E)] =
+                    DLMSValueGet<std::string>(Value);
+                RetVal = APDUConstants::Data_Access_Result::success;
+            }
+            else
+            {
+                RetVal = APDUConstants::Data_Access_Result::type_unmatched;
+            }
+        }
+        catch (...) 
+        {
+            RetVal = APDUConstants::Data_Access_Result::type_unmatched;
+        }
+        return RetVal;
+    }
 }

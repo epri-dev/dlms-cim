@@ -74,45 +74,26 @@
 
 #include "COSEM.h"
 #include "COSEMDevice.h"
-#include "COSEMEngine.h"
-#include "interfaces/IData.h"
 #include "interfaces/IClock.h"
-#include "LinuxClock.h"
-#include "LinuxData.h"
 
 namespace EPRI
 {
-    class LinuxManagementDevice : public COSEMServer
+    class LinuxClock : public IClockObject
     {
     public:
-        LinuxManagementDevice();
-        virtual ~LinuxManagementDevice();
+        LinuxClock();
         
     protected:
-        LinuxClock  m_Clock;
-        LinuxData   m_Data;
-
-    };
-    
-    class LinuxCOSEMDevice : public COSEMDevice
-    {
-    public:
-        LinuxCOSEMDevice();
-        virtual ~LinuxCOSEMDevice();
+        virtual APDUConstants::Data_Access_Result InternalGet(const AssociationContext& Context,
+            ICOSEMAttribute * pAttribute, 
+            const Cosem_Attribute_Descriptor& Descriptor, 
+            SelectiveAccess * pSelectiveAccess) final; 
+        virtual APDUConstants::Action_Result InternalAction(const AssociationContext& Context,
+            ICOSEMMethod * pMethod, 
+            const Cosem_Method_Descriptor& Descriptor, 
+            const DLMSOptional<DLMSVector>& Parameters,
+            DLMSVector * pReturnValue = nullptr) final;
         
-    protected:
-        LinuxManagementDevice m_Management;
         
     };
-    
-    class LinuxCOSEMServerEngine : public COSEMServerEngine
-    {
-    public:
-        LinuxCOSEMServerEngine() = delete;
-        LinuxCOSEMServerEngine(const Options& Opt, Transport * pXPort);
-        virtual ~LinuxCOSEMServerEngine();
-        
-    protected:
-        LinuxCOSEMDevice    m_Device;
-    };
-}
+};

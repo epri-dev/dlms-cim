@@ -70,49 +70,66 @@
 // DEALINGS IN THE SOFTWARE.
 // 
 
-#pragma once
-
-#include "COSEM.h"
-#include "COSEMDevice.h"
-#include "COSEMEngine.h"
-#include "interfaces/IData.h"
-#include "interfaces/IClock.h"
+#include "LinuxCOSEMServer.h"
+#include "COSEMAddress.h"
 #include "LinuxClock.h"
-#include "LinuxData.h"
 
 namespace EPRI
 {
-    class LinuxManagementDevice : public COSEMServer
+    //
+    // Clock
+    //
+    LinuxClock::LinuxClock() :
+        IClockObject({ 0, 0, 1, 0, 0, 255 })
     {
-    public:
-        LinuxManagementDevice();
-        virtual ~LinuxManagementDevice();
-        
-    protected:
-        LinuxClock  m_Clock;
-        LinuxData   m_Data;
+    }
 
-    };
-    
-    class LinuxCOSEMDevice : public COSEMDevice
+    APDUConstants::Data_Access_Result LinuxClock::InternalGet(const AssociationContext& Context,
+        ICOSEMAttribute * pAttribute, 
+        const Cosem_Attribute_Descriptor& Descriptor, 
+        SelectiveAccess * pSelectiveAccess)
     {
-    public:
-        LinuxCOSEMDevice();
-        virtual ~LinuxCOSEMDevice();
-        
-    protected:
-        LinuxManagementDevice m_Management;
-        
-    };
-    
-    class LinuxCOSEMServerEngine : public COSEMServerEngine
+        switch (pAttribute->AttributeID)
+        {
+        case ATTR_TIME:
+        case ATTR_TIME_ZONE:
+        case ATTR_STATUS:
+        case ATTR_DST_BEGIN:
+        case ATTR_DST_END:
+        case ATTR_DST_DEVIATION:
+        case ATTR_DST_ENABLED:
+        case ATTR_CLOCK_BASE:
+        default:
+            std::cout << "Clock GET Received" << std::endl;
+            break;
+        }
+        //
+        // TODO
+        //
+        return APDUConstants::Data_Access_Result::object_unavailable;
+    }
+
+    APDUConstants::Action_Result LinuxClock::InternalAction(const AssociationContext& Context,
+        ICOSEMMethod * pMethod, 
+        const Cosem_Method_Descriptor& Descriptor, 
+        const DLMSOptional<DLMSVector>& Parameters,
+        DLMSVector * pReturnValue /*= nullptr*/)
     {
-    public:
-        LinuxCOSEMServerEngine() = delete;
-        LinuxCOSEMServerEngine(const Options& Opt, Transport * pXPort);
-        virtual ~LinuxCOSEMServerEngine();
-        
-    protected:
-        LinuxCOSEMDevice    m_Device;
-    };
+        switch (pMethod->MethodID)
+        {
+        case METHOD_ADJUST_TO_QUARTER:
+        case METHOD_ADJUST_TO_MEAS_PERIOD:
+        case METHOD_ADJUST_TO_MINUTE:
+        case METHOD_ADJUST_TO_PRESET_TIME:
+        case METHOD_PRESET_ADJUSTING_TIME:
+        case METHOD_SHIFT_TIME:
+        default:
+            std::cout << "Clock ACTION Received" << std::endl;
+            break;
+        }
+        //
+        // TODO
+        //
+        return APDUConstants::Action_Result::object_unavailable;
+    }
 }
