@@ -124,7 +124,6 @@ namespace EPRI
 
     }
         
-    
 
     //
     // Data
@@ -181,17 +180,24 @@ namespace EPRI
         const DLMSOptional<DLMSVector>& Parameters,
         DLMSVector * pReturnValue /*= nullptr*/)
     {
+        APDUConstants::Action_Result result=APDUConstants::Action_Result::object_unavailable;
         switch (pMethod->MethodID)
         {
         case METHOD_REMOTE_DISCONNECT:
-        case METHOD_REMOTE_RECONNECT:
-        default:
             std::cout << "Disconnect ACTION Received" << std::endl;
+            result = APDUConstants::Action_Result::success;
+            break;
+        case METHOD_REMOTE_RECONNECT:
+            std::cout << "Reconnect ACTION Received" << std::endl;
+            result = APDUConstants::Action_Result::success;
+            break;
+        default:
+            std::cout << "Unknown Disconnect ACTION Received" << std::endl;
             break;
         }
         //
         // TODO
         //
-        return APDUConstants::Action_Result::object_unavailable;
+        return result;
     }
 }
