@@ -79,6 +79,7 @@
 #include "interfaces/IClock.h"
 #include "LinuxClock.h"
 #include "LinuxData.h"
+#include "LinuxDisconnect.h"
 
 namespace EPRI
 {
@@ -91,6 +92,7 @@ namespace EPRI
     protected:
         LinuxClock  m_Clock;
         LinuxData   m_Data;
+        LinuxDisconnect m_Disconnect;
 
     };
     

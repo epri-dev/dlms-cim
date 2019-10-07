@@ -72,51 +72,126 @@
 
 #include "LinuxCOSEMServer.h"
 #include "COSEMAddress.h"
+#include "LinuxDisconnect.h"
 
 namespace EPRI
 {
-    //
-    // Logical Device
-    //
-    LinuxManagementDevice::LinuxManagementDevice() :
-        COSEMServer(ReservedAddresses::MANAGEMENT)
+    COSEM_BEGIN_SCHEMA(Disconnect::Control_State_Schema)
+        COSEM_ENUM_TYPE
+        (
+            {
+                IDisconnect::DISCONNECTED,
+                IDisconnect::CONNECTED,
+                IDisconnect::READY_FOR_RECONNECTION
+            }
+         )
+     COSEM_END_SCHEMA
+
+     COSEM_BEGIN_SCHEMA(Disconnect::Control_Mode_Schema)
+        COSEM_ENUM_TYPE
+        (
+            {
+                IDisconnect::ATTR_CONTROL_MODE_0,
+                IDisconnect::ATTR_CONTROL_MODE_1,
+                IDisconnect::ATTR_CONTROL_MODE_2,
+                IDisconnect::ATTR_CONTROL_MODE_3,
+                IDisconnect::ATTR_CONTROL_MODE_4,
+                IDisconnect::ATTR_CONTROL_MODE_5,
+                IDisconnect::ATTR_CONTROL_MODE_6,
+            }
+        )
+     COSEM_END_SCHEMA
+
+    IDisconnect::IDisconnect(const COSEMObjectInstanceCriteria& OIDCriteria, 
+        uint16_t ShortNameBase /* = std::numeric_limits<uint16_t>::max() */)
+        : ICOSEMObject(OIDCriteria, ShortNameBase)
     {
-        LOGICAL_DEVICE_BEGIN_OBJECTS
-            LOGICAL_DEVICE_OBJECT(m_Clock)
-            LOGICAL_DEVICE_OBJECT(m_Data)
-            LOGICAL_DEVICE_OBJECT(m_Disconnect)
-        LOGICAL_DEVICE_END_OBJECTS
-    }
-    
-    LinuxManagementDevice::~LinuxManagementDevice()
-    {
-    }
-    //
-    // COSEM Device
-    //
-    LinuxCOSEMDevice::LinuxCOSEMDevice()
-    {
-        SERVER_BEGIN_LOGICAL_DEVICES
-            SERVER_LOGICAL_DEVICE(m_Management)
-        SERVER_END_LOGICAL_DEVICES
     }
 
-    LinuxCOSEMDevice::~LinuxCOSEMDevice()
+    Disconnect::Disconnect()
+        : ICOSEMInterface(CLSID_Disconnect, 0, 0, 1)
+    {
+        COSEM_BEGIN_ATTRIBUTES
+            COSEM_ATTRIBUTE(output_state)
+            COSEM_ATTRIBUTE(control_state)
+            COSEM_ATTRIBUTE(control_mode)
+        COSEM_END_ATTRIBUTES
+            
+        COSEM_BEGIN_METHODS
+            COSEM_METHOD(remote_disconnect)
+            COSEM_METHOD(remote_reconnect)
+        COSEM_END_METHODS         
+
+    }
+        
+    
+
+    //
+    // Data
+    //
+    LinuxDisconnect::LinuxDisconnect()
+        : IDisconnect({ 0, 0, 96, 3, 10, 255 })
     {
     }
-    //
-    // COSEM Engine
-    //
-    LinuxCOSEMServerEngine::LinuxCOSEMServerEngine(const Options& Opt, Transport * pXPort) :
-        COSEMServerEngine(Opt, pXPort)
+
+    APDUConstants::Data_Access_Result LinuxDisconnect::InternalGet(const AssociationContext& Context,
+        ICOSEMAttribute * pAttribute, 
+        const Cosem_Attribute_Descriptor& Descriptor, 
+        SelectiveAccess * pSelectiveAccess)
     {
-        ENGINE_BEGIN_DEVICES
-            ENGINE_DEVICE(m_Device)
-        ENGINE_END_DEVICES    
+        pAttribute->SelectChoice(COSEMDataType::VISIBLE_STRING);
+        pAttribute->Append(m_Values[Descriptor.instance_id.GetValueGroup(EPRI::COSEMObjectInstanceID::VALUE_GROUP_E)]);
+        return APDUConstants::Data_Access_Result::success;
     }
     
-    LinuxCOSEMServerEngine::~LinuxCOSEMServerEngine()
+    APDUConstants::Data_Access_Result LinuxDisconnect::InternalSet(const AssociationContext& Context,
+        ICOSEMAttribute * pAttribute, 
+        const Cosem_Attribute_Descriptor& Descriptor, 
+        const DLMSVector& Data,
+        SelectiveAccess * pSelectiveAccess)
     {
+        APDUConstants::Data_Access_Result RetVal = APDUConstants::Data_Access_Result::temporary_failure;
+        try
+        {
+            DLMSValue Value;
+            
+            RetVal = ICOSEMObject::InternalSet(Context, pAttribute, Descriptor, Data, pSelectiveAccess);
+            if (APDUConstants::Data_Access_Result::success == RetVal &&
+                pAttribute->GetNextValue(&Value) == COSEMType::GetNextResult::VALUE_RETRIEVED)
+            {
+                m_Values[Descriptor.instance_id.GetValueGroup(EPRI::COSEMObjectInstanceID::VALUE_GROUP_E)] =
+                    DLMSValueGet<std::string>(Value);
+                RetVal = APDUConstants::Data_Access_Result::success;
+            }
+            else
+            {
+                RetVal = APDUConstants::Data_Access_Result::type_unmatched;
+            }
+        }
+        catch (...) 
+        {
+            RetVal = APDUConstants::Data_Access_Result::type_unmatched;
+        }
+        return RetVal;
     }
-    
+
+    APDUConstants::Action_Result LinuxDisconnect::InternalAction(const AssociationContext& Context,
+        ICOSEMMethod * pMethod, 
+        const Cosem_Method_Descriptor& Descriptor, 
+        const DLMSOptional<DLMSVector>& Parameters,
+        DLMSVector * pReturnValue /*= nullptr*/)
+    {
+        switch (pMethod->MethodID)
+        {
+        case METHOD_REMOTE_DISCONNECT:
+        case METHOD_REMOTE_RECONNECT:
+        default:
+            std::cout << "Disconnect ACTION Received" << std::endl;
+            break;
+        }
+        //
+        // TODO
+        //
+        return APDUConstants::Action_Result::object_unavailable;
+    }
 }
