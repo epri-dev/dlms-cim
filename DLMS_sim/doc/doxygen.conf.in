@@ -1006,7 +1006,7 @@ FILTER_SOURCE_PATTERNS =
 # (index.html). This can be useful if you have a project on for instance GitHub
 # and want to reuse the introduction page also for the doxygen output.
 
-USE_MDFILE_AS_MAINPAGE = @dlms-cim_SOURCE_DIR@/doc/design.md
+USE_MDFILE_AS_MAINPAGE = @dlms-cim_SOURCE_DIR@/DLMS_sim/doc/design.md
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing
