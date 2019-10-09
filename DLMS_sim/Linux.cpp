@@ -87,6 +87,7 @@
 #include "COSEM.h"
 #include "serialwrapper/SerialWrapper.h"
 #include "tcpwrapper/TCPWrapper.h"
+#include "dlms-cimConfig.h"
 
 using namespace std;
 using namespace EPRI;
