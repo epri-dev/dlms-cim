@@ -85,6 +85,7 @@ namespace EPRI
             LOGICAL_DEVICE_OBJECT(m_Clock)
             LOGICAL_DEVICE_OBJECT(m_Data)
             LOGICAL_DEVICE_OBJECT(m_Disconnect)
+            LOGICAL_DEVICE_OBJECT(m_ImageTransfer)
         LOGICAL_DEVICE_END_OBJECTS
     }
     

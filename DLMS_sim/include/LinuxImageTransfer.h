@@ -74,49 +74,98 @@
 
 #include "COSEM.h"
 #include "COSEMDevice.h"
-#include "COSEMEngine.h"
 #include "interfaces/IData.h"
-#include "interfaces/IClock.h"
-#include "LinuxClock.h"
-#include "LinuxData.h"
-#include "LinuxDisconnect.h"
-#include "LinuxImageTransfer.h"
 
 namespace EPRI
 {
-    class LinuxManagementDevice : public COSEMServer
-    {
-    public:
-        LinuxManagementDevice();
-        virtual ~LinuxManagementDevice();
-        
-    protected:
-        LinuxClock  m_Clock;
-        LinuxData   m_Data;
-        LinuxDisconnect m_Disconnect;
-        LinuxImageTransfer m_ImageTransfer;
+    const ClassIDType CLSID_ImageTransfer = 18;
 
+    class ImageTransfer : public ICOSEMInterface
+    {
+        COSEM_DEFINE_SCHEMA(Control_State_Schema)
+        COSEM_DEFINE_SCHEMA(Control_Mode_Schema)
+
+    public :
+        ImageTransfer();
+        virtual ~ImageTransfer() = default;
+
+        enum Attributes : ObjectAttributeIdType
+        {
+            ATTR_OUTPUT_STATE = 2,
+            ATTR_CONTROL_STATE = 3,
+            ATTR_CONTROL_MODE = 4,
+        };
+
+        enum ControlState : uint8_t
+        {
+            DISCONNECTED = 0,
+            CONNECTED = 1,
+            READY_FOR_RECONNECTION = 2,
+        };
+
+        enum ControlMode : uint8_t
+        {
+            ATTR_CONTROL_MODE_0 = 0,
+            ATTR_CONTROL_MODE_1 = 1,
+            ATTR_CONTROL_MODE_2 = 2,
+            ATTR_CONTROL_MODE_3 = 3,
+            ATTR_CONTROL_MODE_4 = 4,
+            ATTR_CONTROL_MODE_5 = 5,
+            ATTR_CONTROL_MODE_6 = 6
+        };
+
+        COSEMAttribute<ATTR_OUTPUT_STATE, BooleanSchema, 0x08> output_state;
+        COSEMAttribute<ATTR_OUTPUT_STATE, Control_State_Schema, 0x10> control_state;
+        COSEMAttribute<ATTR_OUTPUT_STATE, Control_Mode_Schema, 0x18> control_mode;
+
+        enum Methods : ObjectAttributeIdType
+        {
+            METHOD_REMOTE_DISCONNECT = 1,
+            METHOD_REMOTE_RECONNECT = 2
+        };
+        COSEMMethod<METHOD_REMOTE_DISCONNECT, IntegerSchema, 0x20>             remote_disconnect;
+        COSEMMethod<METHOD_REMOTE_RECONNECT, IntegerSchema, 0x28>             remote_reconnect;
     };
-    
-    class LinuxCOSEMDevice : public COSEMDevice
+
+
+// TODO: add object derived from ImageTransfer and ICOSEMObject as with IClock.h, line 142
+    class IImageTransfer : public ImageTransfer, public ICOSEMObject 
     {
     public:
-        LinuxCOSEMDevice();
-        virtual ~LinuxCOSEMDevice();
-        
+        IImageTransfer() = delete;
+        IImageTransfer(const COSEMObjectInstanceCriteria& OIDCriteria, 
+                uint16_t ShortNameBase = std::numeric_limits<uint16_t>::max());
+        virtual ~IImageTransfer() = default;
     protected:
-        LinuxManagementDevice m_Management;
-        
+        virtual APDUConstants::Action_Result InternalAction(const AssociationContext& Context,
+            ICOSEMMethod * pMethod, 
+            const Cosem_Method_Descriptor& Descriptor, 
+            const DLMSOptional<DLMSVector>& Parameters,
+            DLMSVector * pReturnValue = nullptr) = 0;
     };
-    
-    class LinuxCOSEMServerEngine : public COSEMServerEngine
+
+    class LinuxImageTransfer : public IImageTransfer
     {
     public:
-        LinuxCOSEMServerEngine() = delete;
-        LinuxCOSEMServerEngine(const Options& Opt, Transport * pXPort);
-        virtual ~LinuxCOSEMServerEngine();
-        
+        LinuxImageTransfer();
+  
     protected:
-        LinuxCOSEMDevice    m_Device;
+        virtual APDUConstants::Data_Access_Result InternalGet(const AssociationContext& Context,
+            ICOSEMAttribute * pAttribute, 
+            const Cosem_Attribute_Descriptor& Descriptor, 
+            SelectiveAccess * pSelectiveAccess) final;
+        virtual APDUConstants::Data_Access_Result InternalSet(const AssociationContext& Context,
+            ICOSEMAttribute * pAttribute, 
+            const Cosem_Attribute_Descriptor& Descriptor, 
+            const DLMSVector& Data,
+            SelectiveAccess * pSelectiveAccess) final;
+        virtual APDUConstants::Action_Result InternalAction(const AssociationContext& Context,
+            ICOSEMMethod * pMethod, 
+            const Cosem_Method_Descriptor& Descriptor, 
+            const DLMSOptional<DLMSVector>& Parameters,
+            DLMSVector * pReturnValue = nullptr) final;
+        
+        std::string m_Values[10];
+        
     };
 }
