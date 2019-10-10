@@ -68,7 +68,7 @@
 // FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-// 
+//
 
 #pragma once
 
@@ -82,8 +82,12 @@ namespace EPRI
 
     class ImageTransfer : public ICOSEMInterface
     {
-        COSEM_DEFINE_SCHEMA(Control_State_Schema)
-        COSEM_DEFINE_SCHEMA(Control_Mode_Schema)
+        COSEM_DEFINE_SCHEMA(DoubleLongUnsignedSchema)
+        COSEM_DEFINE_SCHEMA(Image_Transfer_Status_Schema)
+        COSEM_DEFINE_SCHEMA(Image_Transferred_Block_Status_Schema)
+        COSEM_DEFINE_SCHEMA(Image_To_Activate_Info_Schema)
+        COSEM_DEFINE_SCHEMA(Image_Transfer_Initiate_Schema)
+        COSEM_DEFINE_SCHEMA(Image_Block_Transfer_Schema)
 
     public :
         ImageTransfer();
@@ -91,55 +95,58 @@ namespace EPRI
 
         enum Attributes : ObjectAttributeIdType
         {
-            ATTR_OUTPUT_STATE = 2,
-            ATTR_CONTROL_STATE = 3,
-            ATTR_CONTROL_MODE = 4,
+            ATTR_IMAGE_BLOCK_SIZE = 2,
+            ATTR_IMAGE_TRANSFERRED_BLOCKS_STATUS,
+            ATTR_IMAGE_FIRST_NOT_TRANSFERRED_BLOCK_NUMBER,
+            ATTR_IMAGE_TRANSFER_ENABLED,
+            ATTR_IMAGE_TRANSFER_STATUS,
+            ATTR_IMAGE_TO_ACTIVATE_INFO,
         };
 
-        enum ControlState : uint8_t
+        enum Image_Transfer_Status_Schema : uint8_t
         {
-            DISCONNECTED = 0,
-            CONNECTED = 1,
-            READY_FOR_RECONNECTION = 2,
+            IMAGE_TRANSFER_NOT_INITIATED = 0,
+            IMAGE_TRANSFER_INITIATED,
+            IMAGE_VERIFICATION_INITIATED,
+            IMAGE_VERIFICATION_SUCCESSFUL,
+            IMAGE_VERIFICATION_FAILED,
+            IMAGE_ACTIVATION_INITIATED,
+            IMAGE_ACTIVATION_SUCCESSFUL,
+            IMAGE_ACTIVATION_FAILED,
         };
 
-        enum ControlMode : uint8_t
-        {
-            ATTR_CONTROL_MODE_0 = 0,
-            ATTR_CONTROL_MODE_1 = 1,
-            ATTR_CONTROL_MODE_2 = 2,
-            ATTR_CONTROL_MODE_3 = 3,
-            ATTR_CONTROL_MODE_4 = 4,
-            ATTR_CONTROL_MODE_5 = 5,
-            ATTR_CONTROL_MODE_6 = 6
-        };
-
-        COSEMAttribute<ATTR_OUTPUT_STATE, BooleanSchema, 0x08> output_state;
-        COSEMAttribute<ATTR_OUTPUT_STATE, Control_State_Schema, 0x10> control_state;
-        COSEMAttribute<ATTR_OUTPUT_STATE, Control_Mode_Schema, 0x18> control_mode;
+        COSEMAttribute<ATTR_IMAGE_BLOCK_SIZE, DoubleLongUnsignedSchema, 0x08> image_block_size;
+        COSEMAttribute<ATTR_IMAGE_TRANSFERRED_BLOCKS_STATUS, Image_Transferred_Block_Status_Schema, 0x18> image_transferred_blocks_status;
+        COSEMAttribute<ATTR_IMAGE_FIRST_NOT_TRANSFERRED_BLOCK_NUMBER, DoubleLongUnsignedSchema, 0x20> image_first_not_transferred_block_number;
+        COSEMAttribute<ATTR_IMAGE_TRANSFER_ENABLED, BooleanSchema, 0x28> image_transfer_enabled;
+        COSEMAttribute<ATTR_IMAGE_TRANSFER_STATUS, Image_Transfer_Status_Schema, 0x30> image_transfer_status;
+        COSEMAttribute<ATTR_IMAGE_TO_ACTIVATE_INFO, Image_To_Activate_Info_Schema, 0x38> image_to_activate_info;
 
         enum Methods : ObjectAttributeIdType
         {
-            METHOD_REMOTE_DISCONNECT = 1,
-            METHOD_REMOTE_RECONNECT = 2
+            METHOD_IMAGE_TRANSFER_INITIATE = 1,
+            METHOD_IMAGE_BLOCK_TRANSFER,
+            METHOD_IMAGE_VERIFY,
+            METHOD_IMAGE_ACTIVATE,
         };
-        COSEMMethod<METHOD_REMOTE_DISCONNECT, IntegerSchema, 0x20>             remote_disconnect;
-        COSEMMethod<METHOD_REMOTE_RECONNECT, IntegerSchema, 0x28>             remote_reconnect;
+        COSEMMethod<METHOD_IMAGE_TRANSFER_INITIATE, Image_Transfer_Initiate_Schema, 0x40> image_transfer_initiate;
+        COSEMMethod<METHOD_IMAGE_BLOCK_TRANSFER, Image_Block_Transfer_Schema, 0x48> image_block_transfer;
+        COSEMMethod<METHOD_IMAGE_VERIFY, IntegerSchema, 0x40> image_verify;
+        COSEMMethod<METHOD_IMAGE_ACTIVATE, IntegerSchema, 0x58> image_activate;
     };
 
 
-// TODO: add object derived from ImageTransfer and ICOSEMObject as with IClock.h, line 142
-    class IImageTransfer : public ImageTransfer, public ICOSEMObject 
+    class IImageTransfer : public ImageTransfer, public ICOSEMObject
     {
     public:
         IImageTransfer() = delete;
-        IImageTransfer(const COSEMObjectInstanceCriteria& OIDCriteria, 
+        IImageTransfer(const COSEMObjectInstanceCriteria& OIDCriteria,
                 uint16_t ShortNameBase = std::numeric_limits<uint16_t>::max());
         virtual ~IImageTransfer() = default;
     protected:
         virtual APDUConstants::Action_Result InternalAction(const AssociationContext& Context,
-            ICOSEMMethod * pMethod, 
-            const Cosem_Method_Descriptor& Descriptor, 
+            ICOSEMMethod * pMethod,
+            const Cosem_Method_Descriptor& Descriptor,
             const DLMSOptional<DLMSVector>& Parameters,
             DLMSVector * pReturnValue = nullptr) = 0;
     };
@@ -148,24 +155,24 @@ namespace EPRI
     {
     public:
         LinuxImageTransfer();
-  
+
     protected:
         virtual APDUConstants::Data_Access_Result InternalGet(const AssociationContext& Context,
-            ICOSEMAttribute * pAttribute, 
-            const Cosem_Attribute_Descriptor& Descriptor, 
+            ICOSEMAttribute * pAttribute,
+            const Cosem_Attribute_Descriptor& Descriptor,
             SelectiveAccess * pSelectiveAccess) final;
         virtual APDUConstants::Data_Access_Result InternalSet(const AssociationContext& Context,
-            ICOSEMAttribute * pAttribute, 
-            const Cosem_Attribute_Descriptor& Descriptor, 
+            ICOSEMAttribute * pAttribute,
+            const Cosem_Attribute_Descriptor& Descriptor,
             const DLMSVector& Data,
             SelectiveAccess * pSelectiveAccess) final;
         virtual APDUConstants::Action_Result InternalAction(const AssociationContext& Context,
-            ICOSEMMethod * pMethod, 
-            const Cosem_Method_Descriptor& Descriptor, 
+            ICOSEMMethod * pMethod,
+            const Cosem_Method_Descriptor& Descriptor,
             const DLMSOptional<DLMSVector>& Parameters,
             DLMSVector * pReturnValue = nullptr) final;
-        
+
         std::string m_Values[10];
-        
+
     };
 }
