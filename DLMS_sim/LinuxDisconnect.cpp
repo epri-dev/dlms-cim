@@ -68,7 +68,7 @@
 // FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-// 
+//
 
 #include "LinuxCOSEMServer.h"
 #include "COSEMAddress.h"
@@ -102,7 +102,7 @@ namespace EPRI
         )
      COSEM_END_SCHEMA
 
-    IDisconnect::IDisconnect(const COSEMObjectInstanceCriteria& OIDCriteria, 
+    IDisconnect::IDisconnect(const COSEMObjectInstanceCriteria& OIDCriteria,
         uint16_t ShortNameBase /* = std::numeric_limits<uint16_t>::max() */)
         : ICOSEMObject(OIDCriteria, ShortNameBase)
     {
@@ -116,14 +116,14 @@ namespace EPRI
             COSEM_ATTRIBUTE(control_state)
             COSEM_ATTRIBUTE(control_mode)
         COSEM_END_ATTRIBUTES
-            
+
         COSEM_BEGIN_METHODS
             COSEM_METHOD(remote_disconnect)
             COSEM_METHOD(remote_reconnect)
-        COSEM_END_METHODS         
+        COSEM_END_METHODS
 
     }
-        
+
 
     //
     // Data
@@ -134,18 +134,18 @@ namespace EPRI
     }
 
     APDUConstants::Data_Access_Result LinuxDisconnect::InternalGet(const AssociationContext& Context,
-        ICOSEMAttribute * pAttribute, 
-        const Cosem_Attribute_Descriptor& Descriptor, 
+        ICOSEMAttribute * pAttribute,
+        const Cosem_Attribute_Descriptor& Descriptor,
         SelectiveAccess * pSelectiveAccess)
     {
         pAttribute->SelectChoice(COSEMDataType::VISIBLE_STRING);
         pAttribute->Append(m_Values[Descriptor.instance_id.GetValueGroup(EPRI::COSEMObjectInstanceID::VALUE_GROUP_E)]);
         return APDUConstants::Data_Access_Result::success;
     }
-    
+
     APDUConstants::Data_Access_Result LinuxDisconnect::InternalSet(const AssociationContext& Context,
-        ICOSEMAttribute * pAttribute, 
-        const Cosem_Attribute_Descriptor& Descriptor, 
+        ICOSEMAttribute * pAttribute,
+        const Cosem_Attribute_Descriptor& Descriptor,
         const DLMSVector& Data,
         SelectiveAccess * pSelectiveAccess)
     {
@@ -153,7 +153,7 @@ namespace EPRI
         try
         {
             DLMSValue Value;
-            
+
             RetVal = ICOSEMObject::InternalSet(Context, pAttribute, Descriptor, Data, pSelectiveAccess);
             if (APDUConstants::Data_Access_Result::success == RetVal &&
                 pAttribute->GetNextValue(&Value) == COSEMType::GetNextResult::VALUE_RETRIEVED)
@@ -167,7 +167,7 @@ namespace EPRI
                 RetVal = APDUConstants::Data_Access_Result::type_unmatched;
             }
         }
-        catch (...) 
+        catch (...)
         {
             RetVal = APDUConstants::Data_Access_Result::type_unmatched;
         }
@@ -175,8 +175,8 @@ namespace EPRI
     }
 
     APDUConstants::Action_Result LinuxDisconnect::InternalAction(const AssociationContext& Context,
-        ICOSEMMethod * pMethod, 
-        const Cosem_Method_Descriptor& Descriptor, 
+        ICOSEMMethod * pMethod,
+        const Cosem_Method_Descriptor& Descriptor,
         const DLMSOptional<DLMSVector>& Parameters,
         DLMSVector * pReturnValue /*= nullptr*/)
     {

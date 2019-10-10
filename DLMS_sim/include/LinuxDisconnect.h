@@ -68,7 +68,7 @@
 // FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-// 
+//
 
 #pragma once
 
@@ -123,23 +123,22 @@ namespace EPRI
             METHOD_REMOTE_DISCONNECT = 1,
             METHOD_REMOTE_RECONNECT = 2
         };
-        COSEMMethod<METHOD_REMOTE_DISCONNECT, IntegerSchema, 0x20>             remote_disconnect;
-        COSEMMethod<METHOD_REMOTE_RECONNECT, IntegerSchema, 0x28>             remote_reconnect;
+        COSEMMethod<METHOD_REMOTE_DISCONNECT, IntegerSchema, 0x20> remote_disconnect;
+        COSEMMethod<METHOD_REMOTE_RECONNECT, IntegerSchema, 0x28> remote_reconnect;
     };
 
 
-// TODO: add object derived from Disconnect and ICOSEMObject as with IClock.h, line 142
-    class IDisconnect : public Disconnect, public ICOSEMObject 
+    class IDisconnect : public Disconnect, public ICOSEMObject
     {
     public:
         IDisconnect() = delete;
-        IDisconnect(const COSEMObjectInstanceCriteria& OIDCriteria, 
+        IDisconnect(const COSEMObjectInstanceCriteria& OIDCriteria,
                 uint16_t ShortNameBase = std::numeric_limits<uint16_t>::max());
         virtual ~IDisconnect() = default;
     protected:
         virtual APDUConstants::Action_Result InternalAction(const AssociationContext& Context,
-            ICOSEMMethod * pMethod, 
-            const Cosem_Method_Descriptor& Descriptor, 
+            ICOSEMMethod * pMethod,
+            const Cosem_Method_Descriptor& Descriptor,
             const DLMSOptional<DLMSVector>& Parameters,
             DLMSVector * pReturnValue = nullptr) = 0;
     };
@@ -148,24 +147,24 @@ namespace EPRI
     {
     public:
         LinuxDisconnect();
-  
+
     protected:
         virtual APDUConstants::Data_Access_Result InternalGet(const AssociationContext& Context,
-            ICOSEMAttribute * pAttribute, 
-            const Cosem_Attribute_Descriptor& Descriptor, 
+            ICOSEMAttribute * pAttribute,
+            const Cosem_Attribute_Descriptor& Descriptor,
             SelectiveAccess * pSelectiveAccess) final;
         virtual APDUConstants::Data_Access_Result InternalSet(const AssociationContext& Context,
-            ICOSEMAttribute * pAttribute, 
-            const Cosem_Attribute_Descriptor& Descriptor, 
+            ICOSEMAttribute * pAttribute,
+            const Cosem_Attribute_Descriptor& Descriptor,
             const DLMSVector& Data,
             SelectiveAccess * pSelectiveAccess) final;
         virtual APDUConstants::Action_Result InternalAction(const AssociationContext& Context,
-            ICOSEMMethod * pMethod, 
-            const Cosem_Method_Descriptor& Descriptor, 
+            ICOSEMMethod * pMethod,
+            const Cosem_Method_Descriptor& Descriptor,
             const DLMSOptional<DLMSVector>& Parameters,
             DLMSVector * pReturnValue = nullptr) final;
-        
+
         std::string m_Values[10];
-        
+
     };
 }
