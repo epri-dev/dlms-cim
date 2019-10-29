@@ -12,4 +12,8 @@ add_subdirectory(doc)
 link_directories(${DLMS_LIBRARY_BASE_DIR}/build/lib/DLMS-COSEM/)
 
 add_executable(DLMS_sim LinuxScheduler.cpp Linux.cpp LinuxBaseLibrary.cpp LinuxCore.cpp LinuxCOSEMServer.cpp LinuxDebug.cpp LinuxMemory.cpp LinuxSerial.cpp LinuxSimpleTimer.cpp LinuxSocket.cpp LinuxSynchronization.cpp LinuxClock.cpp LinuxData.cpp LinuxDisconnect.cpp LinuxImageTransfer.cpp)
+add_executable(MeterSim LinuxScheduler.cpp LinuxMeterSim.cpp LinuxBaseLibrary.cpp LinuxCore.cpp LinuxCOSEMServer.cpp LinuxDebug.cpp LinuxMemory.cpp LinuxSerial.cpp LinuxSimpleTimer.cpp LinuxSocket.cpp LinuxSynchronization.cpp LinuxClock.cpp LinuxData.cpp LinuxDisconnect.cpp LinuxImageTransfer.cpp)
+add_executable(HESSim LinuxScheduler.cpp LinuxHESSim.cpp LinuxBaseLibrary.cpp LinuxCore.cpp LinuxCOSEMServer.cpp LinuxDebug.cpp LinuxMemory.cpp LinuxSerial.cpp LinuxSimpleTimer.cpp LinuxSocket.cpp LinuxSynchronization.cpp LinuxClock.cpp LinuxData.cpp LinuxDisconnect.cpp LinuxImageTransfer.cpp)
 target_link_libraries(DLMS_sim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT} "${LIBRARIES_FROM_REFERENCES}")
+target_link_libraries(MeterSim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT} "${LIBRARIES_FROM_REFERENCES}")
+target_link_libraries(HESSim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT} "${LIBRARIES_FROM_REFERENCES}")
