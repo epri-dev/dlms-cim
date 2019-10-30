@@ -129,7 +129,7 @@ namespace EPRI
     }
 
     ImageTransfer::ImageTransfer()
-        : ICOSEMInterface(CLSID_Disconnect, 0, 0, 1)
+        : ICOSEMInterface(CLSID_ImageTransfer, 0, 0, 1)
     {
         COSEM_BEGIN_ATTRIBUTES
             COSEM_ATTRIBUTE(image_block_size)
@@ -163,9 +163,24 @@ namespace EPRI
         const Cosem_Attribute_Descriptor& Descriptor,
         SelectiveAccess * pSelectiveAccess)
     {
-        pAttribute->SelectChoice(COSEMDataType::VISIBLE_STRING);
-        pAttribute->Append(m_Values[Descriptor.instance_id.GetValueGroup(EPRI::COSEMObjectInstanceID::VALUE_GROUP_E)]);
-        return APDUConstants::Data_Access_Result::success;
+        switch (pAttribute->AttributeID) {
+            case ATTR_IMAGE_BLOCK_SIZE:
+                pAttribute->Append(512);
+                return APDUConstants::Data_Access_Result::success;
+                break;
+            case ATTR_IMAGE_TRANSFER_ENABLED:
+                pAttribute->Append(true);
+                return APDUConstants::Data_Access_Result::success;
+                break;
+            case ATTR_IMAGE_TRANSFERRED_BLOCKS_STATUS:
+            case ATTR_IMAGE_FIRST_NOT_TRANSFERRED_BLOCK_NUMBER:
+            case ATTR_IMAGE_TRANSFER_STATUS:
+            case ATTR_IMAGE_TO_ACTIVATE_INFO:
+            default:
+                return APDUConstants::Data_Access_Result::object_unavailable;
+                break;
+        }
+        return APDUConstants::Data_Access_Result::object_unavailable;
     }
 
     APDUConstants::Data_Access_Result LinuxImageTransfer::InternalSet(const AssociationContext& Context,
@@ -208,10 +223,13 @@ namespace EPRI
         APDUConstants::Action_Result result=APDUConstants::Action_Result::object_unavailable;
         switch (pMethod->MethodID)
         {
+        case METHOD_IMAGE_ACTIVATE:
+            std::cout << "Activating Image\n";
+            result = APDUConstants::Action_Result::success;
+            break;
         case METHOD_IMAGE_TRANSFER_INITIATE:
         case METHOD_IMAGE_BLOCK_TRANSFER:
         case METHOD_IMAGE_VERIFY:
-        case METHOD_IMAGE_ACTIVATE:
             std::cout << "ImageTransfer ACTION Received" << std::endl;
             result = APDUConstants::Action_Result::success;
             break;
