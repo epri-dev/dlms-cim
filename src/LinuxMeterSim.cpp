@@ -223,10 +223,11 @@ protected:
 
 int main(int argc, char *argv[])
 {
-    int serialNumber{0};
-    if (argc > 1) {
-        serialNumber = std::atoi(argv[1]);
+    if (argc != 2) {
+        std::cerr << "Usage: MeterSim serialnumberstring\n";
+        return 1;
     }
+    std::string serialNumber{argv[1]};
     std::cout << "EPRI DLMS/COSEM meter simulator; serial number: " << serialNumber << "\n";
     while (1) {
         LinuxBaseLibrary     bl;

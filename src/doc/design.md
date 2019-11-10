@@ -1,5 +1,18 @@
-# Overview
-The purpose of this tool is to provide a reference implementation of a translation from DLMS/COSEM to the Common Information Model (CIM) as would be done in an Advanced Metering Infrastructure (AMI) Head-End System (HES).
+# Design
+The software is composed of a number of pieces, which together make up the simulation.  The components are:
+
+    - Meter simulator(s)
+    - Head-End System (HES) simulator
+    - Meter Data Management System (MDMS) simulator
+
+Each of the components is described in more detail below.
+
+## Meter simulator
+
+## HES simulator
+
+## MDMS simulator
+
 
 ## How to add a COSEM object
 Adding a new COSEM object to the code is best done in a series of steps, starting with an existing class.  For this explanation, we will add the Image Transfer class (`class_id` = 18) based on the code for the `LinuxDisconnect` object.

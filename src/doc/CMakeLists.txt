@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 
 find_package(Doxygen)
+set(MD_SOURCES intro.md design.md using.md building.md)
 if(DOXYGEN_FOUND)
     configure_file(
         "${dlms-cim_SOURCE_DIR}/src/doc/doxygen.conf.in"
@@ -22,6 +23,7 @@ if(DOXYGEN_FOUND)
         "${DOXYGEN_EXECUTABLE}"
         "${CMAKE_BINARY_DIR}/doxygen.conf"
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+        DEPENDS "${MD_SOURCES}"
         COMMENT "Generating API Reference documentation..." VERBATIM
     )
     add_custom_target(
