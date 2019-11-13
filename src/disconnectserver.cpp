@@ -48,8 +48,17 @@ int EndDeviceControls_USCOREBindingService::CreateEndDeviceControls(ns2__EndDevi
     );
     resp.Reply = soap_new_req_ns3__ReplyType(soap,
         _ns3__ReplyType_Result::OK);
-
-        
+    /* If everything is OK, just send 0.0 */
+    resp.Reply->Error.emplace_back(soap_new_req_ns3__ErrorType(soap, "0.0"));
+    /* Otherwise, if there are meters specified that do not exist, return 0.1 
+     * and send an error for each meter that does not exist:
+     * <Error>
+     *  <code>2.4</code>
+     *  <level>FATAL</level>
+     *  <reason>no such meter</reason>
+     *  <ID kind="name" objectType="Meter">X002</ID>
+     * </Error>
+     */
     return SOAP_OK;
 }
 

@@ -50,14 +50,16 @@ add_custom_command(
 ## finally some executables
 add_executable(DLMS_sim Linux.cpp ${DLMS_SERVER_COMMON_SOURCES} ${DLMS_COMMON_SOURCES})
 add_executable(MeterSim LinuxMeterSim.cpp ${DLMS_SERVER_COMMON_SOURCES} ${DLMS_COMMON_SOURCES})
-add_executable(HESSim LinuxHESSim.cpp ${DLMS_COMMON_SOURCES}) 
+add_executable(HESSim LinuxHESSim.cpp ${DLMS_COMMON_SOURCES} ${SOAP_GEN_DIR}/soapC.cpp ${SOAP_GEN_DIR}/soapEndDeviceControls_USCOREBindingService.cpp ${GSOAP_CUSTOM_DIR}/chrono_time_point.cpp UUID.cpp)
 
 add_executable(disconnectserver disconnectserver.cpp ${SOAP_GEN_DIR}/soapC.cpp ${SOAP_GEN_DIR}/soapEndDeviceControls_USCOREBindingService.cpp ${GSOAP_CUSTOM_DIR}/chrono_time_point.cpp UUID.cpp)
 add_executable(disconnectclient disconnectclient.cpp ${SOAP_GEN_DIR}/soapC.cpp ${SOAP_GEN_DIR}/soapEndDeviceControls_USCOREBindingProxy.cpp ${GSOAP_CUSTOM_DIR}/chrono_time_point.cpp UUID.cpp)
+add_executable(CISsim CISsim.cpp ${SOAP_GEN_DIR}/soapC.cpp ${SOAP_GEN_DIR}/soapEndDeviceControls_USCOREBindingService.cpp ${SOAP_GEN_DIR}/soapEndDeviceControls_USCOREBindingProxy.cpp ${GSOAP_CUSTOM_DIR}/chrono_time_point.cpp UUID.cpp)
 
 ## and the various required libraries
 target_link_libraries(DLMS_sim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(MeterSim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(HESSim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(HESSim DLMS-COSEM ${GSOAP_CXX_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(disconnectserver ${GSOAP_CXX_LIBRARIES})
 target_link_libraries(disconnectclient ${GSOAP_CXX_LIBRARIES})
+target_link_libraries(CISsim ${GSOAP_CXX_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

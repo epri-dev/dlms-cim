@@ -31,9 +31,14 @@ ns2__EndDeviceControlsRequestMessageType* connectCreateRequest(bool reconnect, s
     return request;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " serverUrl\n";
+        return 0;
+    }
     EndDeviceControls_USCOREBindingProxy client(SOAP_XML_INDENT);
-    std::string endpointURL{"http://localhost:8888/"};
+    std::string endpointURL{argv[1]};
+    
     std::vector<std::string> meters{"M1001", "M1002"};
     ns2__EndDeviceControlsResponseMessageType response{};
     if (client.CreateEndDeviceControls(endpointURL.c_str(), endpointURL.c_str(), 
