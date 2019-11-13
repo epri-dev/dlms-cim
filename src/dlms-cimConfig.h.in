@@ -73,8 +73,8 @@
 // 
 
 // the configured options and settings for dlms-cim
-#define dlms_cim_VERSION_MAJOR @dlms_cim_VERSION_MAJOR@
-#define dlms_cim_VERSION_MINOR @dlms_cim_VERSION_MINOR@
-#define dlms_cim_VERSION_MICRO @dlms_cim_VERSION_MICRO@
-#define dlms_cim_VERSION "@dlms_cim_VERSION@"
+#define dlms_cim_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define dlms_cim_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define dlms_cim_VERSION_MICRO @PROJECT_VERSION_MICRO@
+#define dlms_cim_VERSION "@PROJECT_VERSION@"
 #endif // DLMSCIMCONFIG_H

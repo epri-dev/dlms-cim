@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
-project(dlms-cim)
-set(dlms_cim_MAJOR_VERSION 1)
-set(dlms_cim_MINOR_VERSION 0)
-set(dlms_cim_MICRO_VERSION 0)
-set(dlms_cim_VERSION ${dlms_cim_MAJOR_VERSION}.${dlms_cim_MINOR_VERSION}.${dlms_cim_MICRO_VERSION})
+project(dlms-cim
+    VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 11)
 
 # load additional detection for GSOAP
@@ -24,7 +21,4 @@ add_subdirectory(DLMS-COSEM)
 add_subdirectory(src)
 SET(CPACK_SOURCE_IGNORE_FILES "/build/;/*.swp;.git*")
 INCLUDE(InstallRequiredSystemLibraries)
-set(CPACK_PACKAGE_VERSION_MAJOR ${dlms_cim_MAJOR_VERSION})
-set(CPACK_PACKAGE_VERSION_MINOR ${dlms_cim_MINOR_VERSION})
-set(CPACK_PACKAGE_VERSION_MICRO ${dlms_cim_MICRO_VERSION})
 include (CPack)

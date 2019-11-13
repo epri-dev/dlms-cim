@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.1)
-
 set(DLMS_LIBRARY_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/../DLMS-COSEM")
 # we want ot use this particular version of the asio library
 set(ASIO_ROOT ${DLMS_LIBRARY_BASE_DIR}/lib/asio-1.10.6)
