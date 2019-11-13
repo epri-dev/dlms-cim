@@ -59,3 +59,5 @@ target_link_libraries(MeterSim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(HESSim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(disconnectserver ${GSOAP_CXX_LIBRARIES})
 target_link_libraries(disconnectclient ${GSOAP_CXX_LIBRARIES})
+
+INSTALL(TARGETS MeterSim HESSim CISsim DESTINATION bin)
