@@ -209,7 +209,7 @@ protected:
 
         PrintLine("\nTCP Server Mode - Listening on Port 4059\n");
         m_pServerEngine = new LinuxCOSEMServerEngine(COSEMServerEngine::Options(),
-            new TCPWrapper((pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options()))));
+            new TCPWrapper((pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_SERVER, LinuxIP::Options::VERSION6)))));
         if (SUCCESSFUL != pSocket->Open())
         {
             PrintLine("Failed to initiate listen\n");
