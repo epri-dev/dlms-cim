@@ -72,6 +72,7 @@
 
 #include <iostream>
 #include <cstdio>
+#include <cstdlib>
 #include <time.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -80,118 +81,23 @@
 #include <algorithm>
 #include <string>
 
+
 #include "LinuxBaseLibrary.h"
 #include "LinuxCOSEMServer.h"
 
 #include "HDLCLLC.h"
 #include "COSEM.h"
+#include "UUID.h"
 #include "serialwrapper/SerialWrapper.h"
 #include "tcpwrapper/TCPWrapper.h"
 #include "dlms-cimConfig.h"
 
+#include "EndDeviceControls_USCOREBinding.nsmap"        // XML namespace mapping table (only needed once at the global level)
+#include "soapEndDeviceControls_USCOREBindingService.h"
+
 using namespace std;
 using namespace EPRI;
 using namespace asio;
-
-class AppBase
-{
-public:
-    typedef std::function<void(const std::string&)> ReadLineFunction;
-
-    AppBase(LinuxBaseLibrary& BL) : 
-        m_Base(BL), m_Input(BL.get_io_service(), ::dup(STDIN_FILENO)), 
-        m_Output(BL.get_io_service(), ::dup(STDOUT_FILENO))
-    {
-    }
-    
-    virtual void Run()
-    {
-        m_Base.Process();
-    }
-    
-    virtual void PrintLine(const std::string& Line)
-    {
-        asio::write(m_Output, asio::buffer(Line));
-    }
-    
-    virtual void ReadLine(ReadLineFunction Handler)
-    {
-        asio::async_read_until(m_Input,
-            m_InputBuffer,
-            '\n',
-            std::bind(&AppBase::ReadLine_Handler,
-                      this,
-                      std::placeholders::_1,
-                      std::placeholders::_2,
-                      Handler));
-        
-    }
-    
-    virtual std::string GetLine()
-    {
-        asio::read_until(m_Input, m_InputBuffer, '\n');
-        return ConsumeStream();
-    }
-    
-protected:
-    void ReadLine_Handler(const asio::error_code& Error, size_t BytesTransferred, ReadLineFunction Handler)
-    {
-        if (!Error)
-        {
-            Handler(ConsumeStream());
-        }
-    }
-    
-    std::string ConsumeStream()
-    {
-        std::istream Stream(&m_InputBuffer);
-        std::string  RetVal;
-        std::getline(Stream, RetVal);
-        return RetVal;
-    }
-
-    int GetNumericInput(const std::string& PromptText, int Default)
-    {
-        std::string RetVal;
-        do
-        {
-            PrintLine(PromptText + ": ");
-            RetVal = GetLine();
-            try
-            {
-                if (RetVal.length())
-                    return std::stoi(RetVal, nullptr, 0);	
-                else 
-                    return Default;
-            }
-            catch (const std::invalid_argument&)
-            {
-                PrintLine("Input must be numeric!\n\n");
-            }
-            catch (const std::out_of_range&)
-            {
-                PrintLine("Input is too large!\n\n");
-            }
-        
-        } while (true);
-    }
-
-    std::string GetStringInput(const std::string& PromptText, const std::string& Default)
-    {
-        std::string RetVal;
-        PrintLine(PromptText + ": ");
-        RetVal = GetLine();
-        if (RetVal.empty())
-            RetVal = Default;
-        return RetVal;
-    }
-    
-    LinuxBaseLibrary&           m_Base;
-    posix::stream_descriptor    m_Input;
-    asio::streambuf             m_InputBuffer;
-    posix::stream_descriptor    m_Output;
-    
-};
 
 class LinuxClientEngine : public COSEMClientEngine
 {
@@ -312,468 +218,115 @@ public:
 
 };
 
-class ClientApp : public AppBase
+LinuxBaseLibrary     bl;
+
+bool serviceConnect(bool reconnect, const std::string& meterURL) 
 {
-public:
-    ClientApp(LinuxBaseLibrary& BL)
-        : AppBase(BL)
-    {
-        m_Base.get_io_service().post(std::bind(&ClientApp::ClientMenu, this));
-    }
-
-protected:
-    void ClientMenu()
-    {
-        PrintLine("\nClient Menu:\n\n");
-        PrintLine("\t0 - Exit Application\n");
-        PrintLine("\tA - TCP Connect\n");
-        PrintLine("\tB - HDLC Physical Connect\n");
-        PrintLine("\tC - HDLC Identify\n");
-        PrintLine("\tD - HDLC Datalink Connect\n");
-        PrintLine("\tE - Serial Wrapper Connect\n");
-        PrintLine("\n");
-        PrintLine("\t1 - COSEM Open\n");
-        PrintLine("\t2 - COSEM Get\n");
-        PrintLine("\t3 - COSEM Set\n");
-        PrintLine("\t4 - COSEM Action\n");
-        PrintLine("\t5 - COSEM Release\n");
-        PrintLine("\n");
-        PrintLine("\tJ - disconnect service\n");
-        PrintLine("\tK - reconnect service\n");
-        PrintLine("\n");
-        PrintLine("\tT - TCP Disconnect\n"); 
-        PrintLine("\tU - HDLC Disconnect\n");
-        PrintLine("\tV - Serial Wrapper Disconnect\n");
-        PrintLine("\nSelect: ");
-        ReadLine(std::bind(&ClientApp::ClientMenu_Handler, this, std::placeholders::_1));
-    }
-    
-    bool IdentifyResponse(const BaseCallbackParameter& Parameters)
-    {
-        const DLIdentifyResponseParameter& Response = 
-            dynamic_cast<const DLIdentifyResponseParameter&>(Parameters);
-        Base()->GetDebug()->TRACE("\n\nIdentify Response (%d, %d, %d, %d)...\n\n",
-            Response.SuccessCode, Response.ProtocolID, Response.ProtocolVersion, 
-            Response.ProtocolRevision);
-        return true;
-    }
-    
-    bool DisconnectConfirm(const BaseCallbackParameter& Parameters)
-    {
-        const DLDisconnectConfirmOrResponse& Response = 
-            dynamic_cast<const DLDisconnectConfirmOrResponse&>(Parameters);
-        Base()->GetDebug()->TRACE("\n\nDisconnect Response from Server %d...\n\n",
-            Response.DestinationAddress.LogicalAddress());
-
-        Base()->GetCore()->GetSerial()->ReleaseSocket(m_pSerialSocket);
-        m_pSerialSocket = nullptr;
-        m_pSocket = nullptr;
-        PrintLine("Serial released.");
-        
-        return true;
-    }
-    
-    void ClientMenu_Handler(const std::string& RetVal) 
-    {
-        if (RetVal == "0")
-        {
-            exit(0);
-        }
-        else if (toupper(RetVal[0]) == 'A')
-        {
-            int         SourceAddress = GetNumericInput("Client Address (Default: 1)", 1);
-            std::string TCPAddress = GetStringInput("Destination TCP Address (Default: localhost)", "localhost");
-    
-            m_pClientEngine = new LinuxClientEngine(COSEMClientEngine::Options(SourceAddress), 
-                new TCPWrapper((m_pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_CLIENT, LinuxIP::Options::VERSION6)))));
-            if (SUCCESSFUL != m_pSocket->Open(TCPAddress.c_str()))
-            {
-                PrintLine("Failed to initiate connect\n");
-            }
-        }
-        else if (toupper(RetVal[0]) == 'B')
-        {
-            int         SourceAddress = GetNumericInput("Client Address (Default: 1)", 1);
-            std::string SerialPort = GetStringInput("Serial Port (Default: /tmp/ttyS11)", "/tmp/ttyS11");
-            
-            PrintLine("Initial Baud Rate Selection\n");
-            PrintLine("\t6  - 9600\n");
-            PrintLine("\t10 - 115200\n");
-            int         BaudRate = GetNumericInput("(Default: 6 - 9600)", 6);
-            //
-            // Engine
-            //
-            m_pClientEngine = new LinuxClientEngine(COSEMClientEngine::Options(SourceAddress), 
-                (m_pHDLC = new HDLCClientLLC(HDLCAddress(SourceAddress), 
-                    (m_pSerialSocket = 
-                        Base()->GetCore()->GetSerial()->CreateSocket(LinuxSerial::Options(ISerial::Options::BaudRate(BaudRate)))),
-                    HDLCOptions())));
-            //
-            // Physical
-            //
-            if (m_pSerialSocket->Open(SerialPort.c_str()) != SUCCESS)
-            {
-                PrintLine("Failed to initiate connect\n");
-            }
-            else
-            {
-                m_pSocket = m_pSerialSocket;
-            }
-        }  
-        else if (toupper(RetVal[0]) == 'C')
-        {
-            if (m_pHDLC)
-            {
-                //
-                // IDENTIFY
-                //
-                m_pHDLC->RegisterIdentifyConfirm(std::bind(&ClientApp::IdentifyResponse, 
-                    this, std::placeholders::_1));
-                m_pHDLC->IdentifyRequest(DLIdentifyRequestParameter(HDLCAddress()));
-            }
-            else
-            {
-                PrintLine("Physical Connection Not Established Yet!\n"); 
-            }
-            
-        }
-        else if (toupper(RetVal[0]) == 'D')
-        {
-            if (m_pSerialSocket && m_pHDLC && m_pSerialSocket->IsConnected())
-            {
-                int DestinationAddress = GetNumericInput("Destination Address (Default: 1)", 1);
-                //
-                // Datalink
-                //
-                m_pHDLC->ConnectRequest(DLConnectRequestOrIndication(HDLCAddress(DestinationAddress)));
-            }
-            else
-            {
-                PrintLine("Physical Connection Not Established Yet!\n");
-            }
-        }
-        
-        else if (toupper(RetVal[0]) == 'E')
-        {
-            int         SourceAddress = GetNumericInput("Client Address (Default: 1)", 1);
-            std::string SerialPort = GetStringInput("Serial Port (Default: /tmp/ttyS11)", "/tmp/ttyS11");
-            
-            PrintLine("Initial Baud Rate Selection\n");
-            PrintLine("\t6  - 9600\n");
-            PrintLine("\t10 - 115200\n");
-            int         BaudRate = GetNumericInput("(Default: 6 - 9600)", 6);
-            
-            m_pClientEngine = new LinuxClientEngine(COSEMClientEngine::Options(SourceAddress), 
-                    new SerialWrapper(
-                        (m_pSerialSocket = 
-                            Base()->GetCore()->GetSerial()->CreateSocket(LinuxSerial::Options(ISerial::Options::BaudRate(BaudRate))))));
-            if (m_pSerialSocket->Open(SerialPort.c_str()) != SUCCESS)
-            {
-                PrintLine("Failed to initiate connect\n"); 
-            }
-            m_pSocket = m_pSerialSocket;
-            
-        }            
-        else if (RetVal == "1")
-        {
-            if (m_pSocket && m_pSocket->IsConnected() & m_pClientEngine->IsTransportConnected()) 
-            {
-                bool                 Send = true;
-                int                  DestinationAddress = GetNumericInput("Server Address (Default: 1)", 1);
-                COSEMSecurityOptions::SecurityLevel Security = (COSEMSecurityOptions::SecurityLevel)
-                    GetNumericInput("Security Level [0 - None, 1 - Low, 2 - High] (Default: 0)", COSEMSecurityOptions::SECURITY_NONE);
-                std::string          Password;
-                COSEMSecurityOptions SecurityOptions; 
-                //
-                // Only supports LN at this time
-                //
-                SecurityOptions.ApplicationContextName = SecurityOptions.ContextLNRNoCipher;
-                switch (Security)
-                {
-                case COSEMSecurityOptions::SECURITY_NONE: 
-                    break;
-                    
-                case COSEMSecurityOptions::SECURITY_LOW_LEVEL:
-                    SecurityOptions.MechanismName = SecurityOptions.MechanismNameLowLevelSecurity;
-                    SecurityOptions.AuthenticationValue = GetStringInput("Password", "");
-                    break;
-                    
-                case COSEMSecurityOptions::SECURITY_HIGH_LEVEL:
-                default:
-                    Send = false;
-                    PrintLine("Security Level is Not Supported at This Time");
-                    break;
-                }
-                if (Send)
-                {
-                    size_t APDUSize = GetNumericInput("APDU Size (Default: 640)", 640);
-                    m_pClientEngine->Open(DestinationAddress,
-                                          SecurityOptions, 
-                                          xDLMS::InitiateRequest(APDUSize));
-                }
-            }
-            else
-            {
-                PrintLine("Transport Connection Not Established Yet!\n");
-            }
-        }
-        else if (RetVal == "2")
-        {
-            if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsOpen())
-            {
-                Cosem_Attribute_Descriptor Descriptor;
-                
-                Descriptor.class_id = (ClassIDType) GetNumericInput("Class ID (Default: 1)", CLSID_IData);
-                Descriptor.attribute_id = (ObjectAttributeIdType) GetNumericInput("Attribute (Default: 2)", 2);
-                if (Descriptor.instance_id.Parse(GetStringInput("OBIS Code (Default: 0-0:96.1.0*255)", "0-0:96.1.0*255")))
-                {
-                    if (m_pClientEngine->Get(Descriptor,
-                                             &m_GetToken))
-                    {
-                        PrintLine(std::string("\tGet Request Sent: Token ") + std::to_string(m_GetToken) + "\n");
-                    }
-                }
-                else
-                {
-                    PrintLine("Malformed OBIS Code!\n");
-                }
-            }
-            else
-            {
-                PrintLine("Not Connected!\n");
-            }
-            
-        }
-        else if (RetVal == "3")
-        {
-            if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsOpen())
-            {
-                Cosem_Attribute_Descriptor Descriptor; 
-                
-                Descriptor.class_id = (ClassIDType) GetNumericInput("Class ID (Default: 1)", CLSID_IData);
-                Descriptor.attribute_id = (ObjectAttributeIdType) GetNumericInput("Attribute (Default: 2)", 2);
-                if (Descriptor.instance_id.Parse(GetStringInput("OBIS Code (Default: 0-0:96.1.0*255)", "0-0:96.1.0*255")))
-                {
-                    COSEMType MyData(COSEMDataType::VISIBLE_STRING, GetStringInput("Value (Default: LINUXDATA)", "LINUXDATA#"));
-                    if (m_pClientEngine->Set(Descriptor,
-                                             MyData,
-                                             &m_SetToken))
-                    {
-                        PrintLine(std::string("\tSet Request Sent: Token ") + std::to_string(m_SetToken) + "\n");
-                    }
-                }
-                else
-                {
-                    PrintLine("Malformed OBIS Code!\n");
-                }
-            }
-            else
-            {
-                PrintLine("Not Connected!\n");
-            }
-            
-        }    
-        else if (RetVal == "4")
-        {
-            if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsOpen())
-            {
-                Cosem_Method_Descriptor Descriptor;
-
-                Descriptor.class_id = (ClassIDType) GetNumericInput("Class ID (Default: 8)", CLSID_IClock);
-                Descriptor.method_id = (ObjectAttributeIdType) GetNumericInput("Method (Default: 1)", 1);
-                if (Descriptor.instance_id.Parse(GetStringInput("OBIS Code (Default: 0-0:1.0.0*255)", "0-0:1.0.0*255")))
-                {
-                    COSEMType MyData(COSEMDataType::INTEGER, GetNumericInput("Parameter (Default: 1)", 1));
-                    if (m_pClientEngine->Action(Descriptor,
-                                            DLMSOptional<DLMSVector>(MyData),
-                                            &m_ActionToken))
-                    {
-                        PrintLine(std::string("\tAction Request Sent: Token ") + std::to_string(m_ActionToken) + "\n");
-                    }
-                }
-                else
-                {
-                    PrintLine("Malformed OBIS Code!\n");
-                }
-            }
-            else
-            {
-                PrintLine("Not Connected!\n"); 
-            }
-            
-        }         
-        else if (RetVal == "5")
-        {
-            if (!m_pClientEngine->Release(xDLMS::InitiateRequest()))
-            {
-                PrintLine("Problem submitting COSEM Release!\n");
-            }
-        }
-        else if (toupper(RetVal[0]) == 'J')   // disconnect service
-            serviceConnect(false, "localhost");
-        else if (toupper(RetVal[0]) == 'K')   // reconnect service
-            serviceConnect(true, "localhost");
-        else if (toupper(RetVal[0]) == 'T')
-        {
-            if (m_pSocket)
-            {
-                Base()->GetCore()->GetIP()->ReleaseSocket(m_pSocket);
-                m_pSocket = nullptr;
-                PrintLine("Socket released.\n");
-            }
-            else
-            {
-                PrintLine("TCP Not Opened!\n");
-            }
-        }
-        else if (toupper(RetVal[0]) == 'U')
-        {
-            if (m_pHDLC && m_pHDLC->IsConnected())
-            {
-                m_pHDLC->RegisterDisconnectConfirm(std::bind(&ClientApp::DisconnectConfirm, 
-                    this,
-                    std::placeholders::_1));
-                m_pHDLC->DisconnectRequest(DLDisconnectRequestOrIndication());
-            }
-            else
-            {
-                PrintLine("HDLC Not Connected!\n");
-            }
-        }
-       
-        m_Base.get_io_service().post(std::bind(&ClientApp::ClientMenu, this));
-    }
-
-    void serviceConnect(bool reconnect, const std::string& meterURL) 
-    {
-            // composed of:
-            // A. TCP connect
-        {
-            int         SourceAddress = 1; //GetNumericInput("Client Address (Default: 1)", 1);
-            std::string TCPAddress = "localhost"; //GetStringInput("Destination TCP Address (Default: localhost)", "localhost");
-    
-            m_pClientEngine = new LinuxClientEngine(COSEMClientEngine::Options(SourceAddress), 
-                new TCPWrapper((m_pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_CLIENT)))));
-            if (SUCCESSFUL != m_pSocket->Open(TCPAddress.c_str()))
-            {
-                PrintLine("Failed to initiate connect\n");
-            } else {
-                PrintLine("Connect successful\n");
-            }
-        }
-            // 1. COSEM Open
-        do {
-            m_Base.get_io_service().poll();
-            if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsTransportConnected()) 
-            {
-                bool                 Send = true;
-                int                  DestinationAddress = 1; //GetNumericInput("Server Address (Default: 1)", 1);
-                COSEMSecurityOptions::SecurityLevel Security = COSEMSecurityOptions::SECURITY_NONE;
-               // (COSEMSecurityOptions::SecurityLevel)
-                    //GetNumericInput("Security Level [0 - None, 1 - Low, 2 - High] (Default: 0)", COSEMSecurityOptions::SECURITY_NONE);
-                COSEMSecurityOptions SecurityOptions; 
-                //
-                // Only supports LN at this time
-                //
-                SecurityOptions.ApplicationContextName = SecurityOptions.ContextLNRNoCipher;
-                size_t APDUSize = 640; // GetNumericInput("APDU Size (Default: 640)", 640);
-                m_pClientEngine->Open(DestinationAddress,
-                                      SecurityOptions, 
-                                      xDLMS::InitiateRequest(APDUSize));
-            }
-            else
-            {
-                PrintLine("Transport Connection Not Established Yet!\n");
-            }
-        } while (!(m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsTransportConnected()));
-            // 4. COSEM Action
-            //  class ID = 70
-            //  method = 1 (disconnect)
-            //  OBIS Code = 0-0:96.3.10*255
-            //  Parameter 1 (don't care)
-        do {
-            m_Base.get_io_service().poll();
-            if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsOpen())
-            {
-                Cosem_Method_Descriptor Descriptor;
-
-                Descriptor.class_id = CLSID_Disconnect; // (ClassIDType) GetNumericInput("Class ID (Default: 8)", CLSID_IClock);
-                Descriptor.method_id = (ObjectAttributeIdType)(reconnect ? 2 : 1); // GetNumericInput("Method (Default: 1)", 1);
-                if (Descriptor.instance_id.Parse("0-0:96.3.10*255")) //GetStringInput("OBIS Code (Default: 0-0:1.0.0*255)", "0-0:1.0.0*255")))
-                {
-                    COSEMType MyData(COSEMDataType::INTEGER, 1); //GetNumericInput("Parameter (Default: 1)", 1));
-                    if (m_pClientEngine->Action(Descriptor,
-                                            DLMSOptional<DLMSVector>(MyData),
-                                            &m_ActionToken))
-                    {
-                        PrintLine(std::string("\tAction Request Sent: Token ") + std::to_string(m_ActionToken) + "\n");
-                    }
-                }
-                else
-                {
-                    PrintLine("Malformed OBIS Code!\n");
-                }
-            }
-            else
-            {
-                PrintLine("Not Connected!\n"); 
-            }
-            
-        } while (!(m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsOpen()));
-            // 5. COSEM Disconnect
-        {
-            if (!m_pClientEngine->Release(xDLMS::InitiateRequest()))
-            {
-                PrintLine("Problem submitting COSEM Release!\n");
-            }
-        }
-            // T. TCP Disconnect
-        {
-            if (m_pSocket)
-            {
-                PrintLine("We got this far...\n");
-                Base()->GetCore()->GetIP()->ReleaseSocket(m_pSocket);
-                m_pSocket = nullptr;
-                PrintLine("Socket released.\n");
-            }
-            else
-            {
-                PrintLine("TCP Not Opened!\n");
-            }
-        }
-            //
-    }
-    
-    LinuxClientEngine *             m_pClientEngine = nullptr;
+    bool success{false};
+    // composed of:
+    // A. TCP connect
+    int         SourceAddress = 1; //GetNumericInput("Client Address (Default: 1)", 1);
     ISocket *                       m_pSocket = nullptr;
-    ISerialSocket *                 m_pSerialSocket = nullptr;
-    HDLCClientLLC *                 m_pHDLC = nullptr;
-    COSEMClientEngine::RequestToken m_GetToken;
-    COSEMClientEngine::RequestToken m_SetToken;
-    COSEMClientEngine::RequestToken m_ActionToken; 
-   
-};
 
-void main2(int argc, char *argv[])
-{
-    
-    std::cout << "EPRI DLMS/COSEM Head-End-System Simulator\n";
+    auto m_pClientEngine = new LinuxClientEngine(COSEMClientEngine::Options(SourceAddress), 
+        new TCPWrapper((m_pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_CLIENT)))));
+    if (SUCCESSFUL != m_pSocket->Open(meterURL.c_str()))
     {
-        LinuxBaseLibrary     bl;
-        ClientApp App(bl);
-        App.Run();
+        std::cout << "Failed to initiate connect to " << meterURL << "\n";
+        return success;
     }
+        // 1. COSEM Open
+    int tries{400};
+    do {
+        bl.get_io_service().poll();
+        if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsTransportConnected()) 
+        {
+            bool                 Send = true;
+            int                  DestinationAddress = 1; //GetNumericInput("Server Address (Default: 1)", 1);
+            COSEMSecurityOptions::SecurityLevel Security = COSEMSecurityOptions::SECURITY_NONE;
+           // (COSEMSecurityOptions::SecurityLevel)
+                //GetNumericInput("Security Level [0 - None, 1 - Low, 2 - High] (Default: 0)", COSEMSecurityOptions::SECURITY_NONE);
+            COSEMSecurityOptions SecurityOptions; 
+            //
+            // Only supports LN at this time
+            //
+            SecurityOptions.ApplicationContextName = SecurityOptions.ContextLNRNoCipher;
+            size_t APDUSize = 640; // GetNumericInput("APDU Size (Default: 640)", 640);
+            m_pClientEngine->Open(DestinationAddress,
+                                  SecurityOptions, 
+                                  xDLMS::InitiateRequest(APDUSize));
+        }
+        else
+        {
+            // std::cout << "Transport Connection Not Established Yet!\n";
+            --tries;
+        }
+    } while (!(m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsTransportConnected()) && tries > 0);
+    if (tries <= 0) {
+        return success;
+    }
+    tries = 400;
+        // 4. COSEM Action
+        //  class ID = 70
+        //  method = 1 (disconnect)
+        //  OBIS Code = 0-0:96.3.10*255
+        //  Parameter 1 (don't care)
+    COSEMClientEngine::RequestToken m_ActionToken; 
+    do {
+        bl.get_io_service().poll();
+        if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsOpen())
+        {
+            Cosem_Method_Descriptor Descriptor;
+
+            Descriptor.class_id = CLSID_Disconnect;
+            Descriptor.method_id = (ObjectAttributeIdType)(reconnect ? 2 : 1);
+            if (Descriptor.instance_id.Parse("0-0:96.3.10*255"))
+            {
+                COSEMType MyData(COSEMDataType::INTEGER, 1); 
+                if (m_pClientEngine->Action(Descriptor,
+                                        DLMSOptional<DLMSVector>(MyData),
+                                        &m_ActionToken))
+                {
+                    std::cout << std::string("\tAction Request Sent: Token ") + std::to_string(m_ActionToken) + "\n";
+                }
+            }
+            else
+            {
+                std::cout << "Malformed OBIS Code!\n";
+            }
+        }
+        else
+        {
+            // std::cout << "Not Connected!\n"; 
+            --tries;
+        }
+        
+    } while (!(m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsOpen()) && tries > 0);
+        // 5. COSEM Disconnect
+    {
+        if (!m_pClientEngine->Release(xDLMS::InitiateRequest()))
+        {
+            std::cout << "Problem submitting COSEM Release!\n";
+        }
+    }
+        // T. TCP Disconnect
+    {
+        if (m_pSocket)
+        {
+            Base()->GetCore()->GetIP()->ReleaseSocket(m_pSocket);
+            m_pSocket = nullptr;
+            std::cout << "Socket released.\n";
+            success = true;
+        }
+        else
+        {
+            std::cout << "TCP Not Opened!\n";
+        }
+    }
+    return success;
 }
 
-// TODO: code from the disconnectserver follows.  We need to combine these.
-
-#include "EndDeviceControls_USCOREBinding.nsmap"        // XML namespace mapping table (only needed once at the global level)
-#include "soapEndDeviceControls_USCOREBindingService.h"
-#include "UUID.h"
-#include <cstdlib>
-#include <iostream>
-
-static const std::vector<std::string> meters{"M1001", "M1002"};
+std::vector<std::string> meters{};
 
 int main(int argc, char *argv[]) {
     int port;
@@ -783,23 +336,33 @@ int main(int argc, char *argv[]) {
     if (port <= 0) {
         port = 8080;
     }
-    std::cout << "Starting Head End System simulator on port " << port << '\n';
-    {
-        LinuxBaseLibrary     bl;
-        ClientApp App(bl);
-        std::cout << "starting client\n";
-        App.Run();
+    for (int i=2; i < argc; ++i) {
+        meters.emplace_back(std::string{argv[i]});
     }
-    std::cout << "The client is running asynchronously\n";
+    std::cout << "Starting Head End System simulator on port " << port << '\n';
     EndDeviceControls_USCOREBindingService hes(SOAP_XML_INDENT);
     hes.soap->send_timeout = 5; // send timeout is 5s
     hes.soap->recv_timeout = 5; // receive timeout is 5s
     if (hes.run(port) != SOAP_OK && hes.soap->error != SOAP_TCP_ERROR) {
         hes.soap_stream_fault(std::cerr);
+        std::cout << "ERROR: unable to start Head End System simulator on port " << port << '\n';
     }
     hes.destroy(); 
     std::cout << "Shut down Head End Server on port " << port << '\n';
 }
+
+// simple helper struct to translate requested meter names into URLs
+struct Device {
+    std::string request;
+    std::string url; 
+    bool failed = true;
+    Device(std::string devname) : request{devname} {
+        auto num = atoi(&(devname[1])) - 1001;
+        if (num >= 0 && num < meters.size()) {
+            url = meters[num];
+        }
+    }
+};
 
 /// Web service operation 'CreateEndDeviceControls' implementation, should return SOAP_OK or error code
 int EndDeviceControls_USCOREBindingService::CreateEndDeviceControls(ns2__EndDeviceControlsRequestMessageType *req, ns2__EndDeviceControlsResponseMessageType &resp) {
@@ -809,11 +372,43 @@ int EndDeviceControls_USCOREBindingService::CreateEndDeviceControls(ns2__EndDevi
     if (req->Header->Verb == _ns3__HeaderType_Verb::create) {
         std::cout << "We got a create message\n";
     }
-    auto replyTo{req->Header->ReplyAddress};
-    std::cout << "Reply to: " << *replyTo << '\n';
-    
+    bool reconnect{false};
+
     // make sure the devices exist
-    // if they do, queue up the outbound messages
+    std::vector<Device> victims;
+    if (req->Payload) {
+        for (ns4__EndDeviceControls* edcs: req->Payload->ns4__EndDeviceControls_) {
+            if (edcs) {
+                for (ns4__EndDeviceControl* edc: edcs->EndDeviceControl) {
+                    if (edc) {
+                        auto ref{edc->EndDeviceControlType.ref};
+                        if (ref && *ref == disconnectRef) {
+                            reconnect = false;
+                        }
+                        if (ref && *ref == reconnectRef) {
+                            reconnect = true;
+                        }
+                        if (edc->EndDevices.size()) {
+                            for (auto name: edc->EndDevices.front()->Names) {
+                                victims.emplace_back(Device(name->name));
+                                std::cout << name->name << '\n';
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }    
+    // if they do, send the outbound messages
+    for (auto& meter: victims) {
+        if (!meter.url.empty()) {
+            auto success{serviceConnect(reconnect, meter.url)};
+            meter.failed = !success;
+            std::cout << (reconnect ? "reconnecting" : "disconnecting")
+                << " meter at " << meter.url 
+                << (success ? "... OK\n" : "... FAILED!\n");
+        }
+    }
     // and send the response
     resp.Header = soap_new_req_ns3__HeaderType(soap,
         _ns3__HeaderType_Verb::reply,   // Verb
@@ -822,19 +417,27 @@ int EndDeviceControls_USCOREBindingService::CreateEndDeviceControls(ns2__EndDevi
         UUID::random(),   // MessageID
         req->Header->CorrelationID  // CorrelationID
     );
-    resp.Reply = soap_new_req_ns3__ReplyType(soap,
-        _ns3__ReplyType_Result::OK);
     /* If everything is OK, just send 0.0 */
-    resp.Reply->Error.emplace_back(soap_new_req_ns3__ErrorType(soap, "0.0"));
-    /* Otherwise, if there are meters specified that do not exist, return 0.1 
-     * and send an error for each meter that does not exist:
-     * <Error>
-     *  <code>2.4</code>
-     *  <level>FATAL</level>
-     *  <reason>no such meter</reason>
-     *  <ID kind="name" objectType="Meter">X002</ID>
-     * </Error>
-     */
+    if (all_of(victims.begin(), victims.end(), [](Device &d){ return !d.failed; })) {
+        resp.Reply = soap_new_req_ns3__ReplyType(soap, _ns3__ReplyType_Result::OK);
+        resp.Reply->Error.emplace_back(soap_new_req_ns3__ErrorType(soap, "0.0"));
+        resp.Reply->Error.back()->level = soap_new__ns3__ErrorType_level(soap);
+    } else {
+        resp.Reply = soap_new_req_ns3__ReplyType(soap, _ns3__ReplyType_Result::FAILED);
+        for (auto& meter: victims) {
+            if (meter.failed) { 
+                bool nonExisting{meter.url.empty()};
+                resp.Reply->Error.emplace_back(soap_new_req_ns3__ErrorType(soap, 
+                    nonExisting ? "2.12" : "2.4"));
+                resp.Reply->Error.back()->level = soap_new__ns3__ErrorType_level(soap, 2);
+                *(resp.Reply->Error.back()->level) = _ns3__ErrorType_level::FATAL;
+                resp.Reply->Error.back()->ID = soap_new_req__ns3__ErrorType_ID(soap, meter.request);
+                resp.Reply->Error.back()->ID->kind = soap_new_ns3__IDKindType(soap);
+                resp.Reply->Error.back()->ID->objectType = soap_new_std__string(soap);
+                resp.Reply->Error.back()->ID->objectType->append("Meter");
+            }
+        }
+    }
     return SOAP_OK;
 }
 

@@ -8,6 +8,8 @@
 #include <thread>
 #include <functional>
 
+static std::string myURL;
+
 ns2__EndDeviceControlsRequestMessageType* connectCreateRequest(bool reconnect, struct soap* soap, const std::vector<std::string>& meters) {
     static std::string disconnectRef{"3.31.0.23"};
     static std::string reconnectRef{"3.31.0.18"};
@@ -32,7 +34,7 @@ ns2__EndDeviceControlsRequestMessageType* connectCreateRequest(bool reconnect, s
     );
     request->Payload = soap_new_req_ns2__EndDeviceControlsPayloadType(soap, controls);
     request->Header->ReplyAddress = soap_new_std__string(soap);
-    request->Header->ReplyAddress->append("http://localhost:8888/reply/");
+    request->Header->ReplyAddress->append(myURL);
     return request;
 }
 
@@ -67,8 +69,6 @@ void run_client(std::string serverUrl, bool reconnect) {
     }
     client.destroy();
 }
-
-static const std::vector<std::string> meters{"M1001", "M1002"};
 
 void run_server(int port) {
     std::cout << "Starting Head End Server on port " << port << '\n';
@@ -207,10 +207,11 @@ void timer_start(std::function<void(void)> func, unsigned int seconds) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " serverUrl\n";
+    if (argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " HES_URL thisMachine_URL\n";
         return 1;
     }
+    myURL = std::string{argv[2]};
     timer_start(std::bind(run_client, std::string{argv[1]}, false), 10);
     // give the other thread a two second head start
     std::this_thread::sleep_for(std::chrono::seconds(2));
