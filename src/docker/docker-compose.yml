@@ -1,0 +1,14 @@
+version: '3.4'
+services:
+    dlms-cim-docs:
+        build:
+            context: .
+            target: docserver
+
+        ports:
+                - "8080:80"
+
+    dlms-cim-demo:
+        build:
+            context: .
+            target: demo

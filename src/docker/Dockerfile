@@ -15,25 +15,18 @@ WORKDIR /tmp/
 # When the software repository is no longer private, this will work 
 # without requiring authentication:
 # RUN git clone --recurse-submodules https://github.com/epri-dev/dlms-cim.git 
-COPY dlms-cim-master.zip .
-COPY DLMS-COSEM-master.zip .
-RUN unzip dlms-cim-master.zip && \
-    mv /tmp/dlms-cim-master /tmp/dlms-cim && \
-    rmdir /tmp/dlms-cim/DLMS-COSEM && \
-    unzip DLMS-COSEM-master.zip && \
-    mv /tmp/DLMS-COSEM-master /tmp/dlms-cim/DLMS-COSEM 
-RUN mkdir /tmp/dlms-cim/build && \
-    cd /tmp/dlms-cim/build && \
-    cmake .. && \
+ADD dlms-cim-1.0.0-Source.tar.gz .
+RUN mkdir dlms-cim-1.0.0-Source/build && \
+    cd /tmp/dlms-cim-1.0.0-Source/build && \
+    cmake -Wno-dev .. && \
     make && \
     make pdf
 
-FROM fedora:30
-WORKDIR /root/
-COPY --from=builder /tmp/dlms-cim/build/src/disconnectserver .
-COPY --from=builder /tmp/dlms-cim/build/src/disconnectclient .
-COPY --from=builder /tmp/dlms-cim/build/src/DLMS_sim .
-COPY --from=builder /tmp/dlms-cim/build/src/HESSim .
-COPY --from=builder /tmp/dlms-cim/build/src/MeterSim .
-COPY --from=builder /tmp/dlms-cim/build/doc/latex/refman.pdf .
-ENTRYPOINT ["/bin/bash", "/root/disconnectclient", "8888"]
+FROM nginx:alpine AS docserver
+COPY --from=builder /tmp/dlms-cim-1.0.0-Source/build/doc/html/ /usr/share/nginx/html
+COPY --from=builder /tmp/dlms-cim-1.0.0-Source/build/doc/latex/refman.pdf /usr/share/nginx/html/dlms-cim.pdf
+COPY default.conf /etc/nginx/conf.d/default.conf
+
+FROM alpine AS demo
+WORKDIR /tmp/
+COPY --from=builder /tmp/dlms-cim-1.0.0-Source/build/src/ .
