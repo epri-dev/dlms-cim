@@ -1,14 +1,42 @@
-version: '3.4'
+version: "3.4"
 services:
     dlms-cim-docs:
         build:
+            args:
+                - projectsourcename=dlms-cim-1.0.0-Source
             context: .
             target: docserver
-
         ports:
                 - "8080:80"
+        networks:
+            - docnet
 
-    dlms-cim-demo:
+    dlms-cim-hes:
         build:
+            args:
+                - projectsourcename=dlms-cim-1.0.0-Source
             context: .
             target: demo
+        entrypoint: 
+            - /tmp/disconnectserver
+            - "8888"
+        networks:
+            - hesnet
+            - meternet
+
+    dlms-cim-cis:
+        build:
+            args:
+                - projectsourcename=dlms-cim-1.0.0-Source
+            context: .
+            target: demo
+        entrypoint: 
+            - /tmp/CISsim
+            - "http://dlms-cim-hes:8888"
+        networks:
+            - hesnet
+
+networks:
+    docnet:
+    hesnet:
+    meternet:

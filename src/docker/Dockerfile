@@ -1,4 +1,5 @@
 FROM fedora:30 AS builder
+ARG projectsourcename
 
 LABEL maintainer="Ed Beroset <beroset@ieee.org>"
 
@@ -15,18 +16,26 @@ WORKDIR /tmp/
 # When the software repository is no longer private, this will work 
 # without requiring authentication:
 # RUN git clone --recurse-submodules https://github.com/epri-dev/dlms-cim.git 
-ADD dlms-cim-1.0.0-Source.tar.gz .
-RUN mkdir dlms-cim-1.0.0-Source/build && \
-    cd /tmp/dlms-cim-1.0.0-Source/build && \
+ADD $projectsourcename.tar.gz .
+RUN mv $projectsourcename dlms-cim && \
+    mkdir dlms-cim/build && \
+    cd /tmp/dlms-cim/build && \
     cmake -Wno-dev .. && \
     make && \
     make pdf
 
 FROM nginx:alpine AS docserver
-COPY --from=builder /tmp/dlms-cim-1.0.0-Source/build/doc/html/ /usr/share/nginx/html
-COPY --from=builder /tmp/dlms-cim-1.0.0-Source/build/doc/latex/refman.pdf /usr/share/nginx/html/dlms-cim.pdf
+COPY --from=builder /tmp/dlms-cim/build/doc/html/ /usr/share/nginx/html
+COPY --from=builder /tmp/dlms-cim/build/doc/latex/refman.pdf /usr/share/nginx/html/dlms-cim.pdf
 COPY default.conf /etc/nginx/conf.d/default.conf
 
-FROM alpine AS demo
+FROM fedora:30 AS demo
+RUN dnf update -y \
+        && dnf install -y gsoap
 WORKDIR /tmp/
-COPY --from=builder /tmp/dlms-cim-1.0.0-Source/build/src/ .
+COPY --from=builder /tmp/dlms-cim/build/src/disconnectserver .
+COPY --from=builder /tmp/dlms-cim/build/src/disconnectclient .
+COPY --from=builder /tmp/dlms-cim/build/src/CISsim .
+COPY --from=builder /tmp/dlms-cim/build/src/DLMS_sim .
+COPY --from=builder /tmp/dlms-cim/build/src/HESsim .
+COPY --from=builder /tmp/dlms-cim/build/src/Metersim .
