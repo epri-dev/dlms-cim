@@ -80,6 +80,7 @@
 #include <asio.hpp>
 #include <algorithm>
 #include <string>
+#include <chrono>
 
 
 #include "LinuxBaseLibrary.h"
@@ -402,9 +403,14 @@ int EndDeviceControls_USCOREBindingService::CreateEndDeviceControls(ns2__EndDevi
     // if they do, send the outbound messages
     for (auto& meter: victims) {
         if (!meter.url.empty()) {
+            time_t now_c = chrono::system_clock::to_time_t(
+                chrono::system_clock::now());
             auto success{serviceConnect(reconnect, meter.url)};
             meter.failed = !success;
-            std::cout << (reconnect ? "reconnecting" : "disconnecting")
+            std::cout << "["
+                << put_time(localtime(&now_c), "%F %T")
+                << "] "
+                << (reconnect ? "reconnecting" : "disconnecting")
                 << " meter at " << meter.url 
                 << (success ? "... OK\n" : "... FAILED!\n");
         }
