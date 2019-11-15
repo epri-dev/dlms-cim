@@ -1,6 +1,8 @@
 set(DLMS_LIBRARY_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/../DLMS-COSEM")
 # we want ot use this particular version of the asio library
 set(ASIO_ROOT ${DLMS_LIBRARY_BASE_DIR}/lib/asio-1.10.6)
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Asio REQUIRED)
 find_package(Threads REQUIRED)
 find_package(GSOAP REQUIRED)
@@ -55,12 +57,12 @@ add_executable(disconnectclient disconnectclient.cpp ${SOAP_GEN_DIR}/soapC.cpp $
 add_executable(CISsim CISsim.cpp ${SOAP_GEN_DIR}/soapC.cpp ${SOAP_GEN_DIR}/soapEndDeviceControls_USCOREBindingService.cpp ${SOAP_GEN_DIR}/soapEndDeviceControls_USCOREBindingProxy.cpp ${GSOAP_CUSTOM_DIR}/chrono_time_point.cpp UUID.cpp)
 
 ## and the various required libraries
-target_link_libraries(DLMS_sim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(Metersim DLMS-COSEM ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(HESsim DLMS-COSEM ${GSOAP_CXX_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(DLMS_sim DLMS-COSEM Threads::Threads)
+target_link_libraries(Metersim DLMS-COSEM Threads::Threads)
+target_link_libraries(HESsim DLMS-COSEM ${GSOAP_CXX_LIBRARIES} Threads::Threads)
 target_link_libraries(disconnectserver ${GSOAP_CXX_LIBRARIES})
 target_link_libraries(disconnectclient ${GSOAP_CXX_LIBRARIES})
-target_link_libraries(CISsim ${GSOAP_CXX_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(CISsim ${GSOAP_CXX_LIBRARIES} Threads::Threads)
 
 ## install things
 INSTALL(TARGETS Metersim HESsim CISsim DESTINATION bin)
