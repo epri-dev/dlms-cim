@@ -382,7 +382,7 @@ protected:
             std::string TCPAddress = GetStringInput("Destination TCP Address (Default: localhost)", "localhost");
     
             m_pClientEngine = new LinuxClientEngine(COSEMClientEngine::Options(SourceAddress), 
-                new TCPWrapper((m_pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_CLIENT, LinuxIP::Options::VERSION6)))));
+                new TCPWrapper((m_pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_CLIENT, LinuxIP::Options::VERSION4)))));
             if (SUCCESSFUL != m_pSocket->Open(TCPAddress.c_str()))
             {
                 PrintLine("Failed to initiate connect\n");

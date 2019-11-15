@@ -10,8 +10,8 @@ services:
             - /tmp/Metersim 
             - "M1001"
         stdin_open: true
-        ports:
-            - "4059"
+        expose:
+            - "4059/tcp"
         networks:
             - meternet
 
@@ -25,8 +25,8 @@ services:
             - /tmp/Metersim 
             - "M1002"
         stdin_open: true
-        ports:
-            - "4059"
+        expose:
+            - "4059/tcp"
         networks:
             - meternet
 
@@ -53,8 +53,8 @@ services:
             - dlms-cim-meter1
             - dlms-cim-meter2
         stdin_open: true
-        ports:
-            - "8888"
+        expose:
+            - "8888/tcp"
         networks:
             - hesnet
             - meternet
@@ -76,11 +76,3 @@ networks:
     docnet:
     hesnet:
     meternet:
-        enable_ipv6: true
-        driver: bridge
-        ipam:
-            driver: default
-            config:
-                - subnet: 2001:3200:3200::0/64
-                  gateway: 2001:3200:3200::1
-        
