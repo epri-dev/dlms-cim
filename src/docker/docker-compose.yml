@@ -1,5 +1,35 @@
-version: "3.4"
+version: "2.4"
 services:
+    dlms-cim-meter1:
+        build:
+            args:
+                - projectsourcename=dlms-cim-1.0.0-Source
+            context: .
+            target: demo
+        entrypoint: 
+            - /tmp/Metersim 
+            - "M1001"
+        stdin_open: true
+        ports:
+            - "4059"
+        networks:
+            - meternet
+
+    dlms-cim-meter2:
+        build:
+            args:
+                - projectsourcename=dlms-cim-1.0.0-Source
+            context: .
+            target: demo
+        entrypoint: 
+            - /tmp/Metersim 
+            - "M1002"
+        stdin_open: true
+        ports:
+            - "4059"
+        networks:
+            - meternet
+
     dlms-cim-docs:
         build:
             args:
@@ -18,7 +48,12 @@ services:
             context: .
             target: demo
         entrypoint: 
-            - /tmp/disconnectserver
+            - /tmp/HESsim
+            - "8888"
+            - dlms-cim-meter1
+            - dlms-cim-meter2
+        stdin_open: true
+        ports:
             - "8888"
         networks:
             - hesnet
@@ -33,6 +68,7 @@ services:
         entrypoint: 
             - /tmp/CISsim
             - "http://dlms-cim-hes:8888"
+            - "http://dlms-cim-cis"
         networks:
             - hesnet
 
@@ -40,3 +76,11 @@ networks:
     docnet:
     hesnet:
     meternet:
+        enable_ipv6: true
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+                - subnet: 2001:3200:3200::0/64
+                  gateway: 2001:3200:3200::1
+        
