@@ -229,7 +229,7 @@ bool serviceConnect(bool reconnect, const std::string& meterURL)
     ISocket *                       m_pSocket = nullptr;
 
     auto m_pClientEngine = new LinuxClientEngine(COSEMClientEngine::Options(SourceAddress), 
-        new TCPWrapper((m_pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_CLIENT)))));
+        new TCPWrapper((m_pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_CLIENT, LinuxIP::Options::VERSION6)))));
     if (SUCCESSFUL != m_pSocket->Open(meterURL.c_str()))
     {
         std::cout << "Failed to initiate connect to " << meterURL << "\n";
