@@ -226,7 +226,7 @@ LinuxBaseLibrary     bl;
 
 bool serviceConnect(bool reconnect, const std::string& meterURL) 
 {
-    static constexpr int max_tries{40};
+    static constexpr int max_tries{400};
     bool result{false};
     // composed of:
     // A. TCP connect
