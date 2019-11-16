@@ -94,8 +94,7 @@ class ServerApp
 {
 public:
     ServerApp(LinuxBaseLibrary& BL) : 
-        m_Base(BL), m_Input(BL.get_io_service(), ::dup(STDIN_FILENO)), 
-        m_Output(BL.get_io_service(), ::dup(STDOUT_FILENO))
+        m_Base(BL)
     {
         m_Base.get_io_service().post(std::bind(&ServerApp::Server_Handler, this));
     }
@@ -122,8 +121,6 @@ protected:
 
     LinuxCOSEMServerEngine * m_pServerEngine = nullptr;
     LinuxBaseLibrary&           m_Base;
-    posix::stream_descriptor    m_Input;
-    posix::stream_descriptor    m_Output;
 };
 
 int main(int argc, char *argv[])
