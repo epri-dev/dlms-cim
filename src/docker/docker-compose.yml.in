@@ -1,0 +1,65 @@
+version: "2.4"
+services:
+    dlms-cim-meter1:
+        build:
+            context: src
+            target: demo
+        entrypoint: 
+            - /tmp/Metersim 
+            - "M1001"
+        expose:
+            - "4059/tcp"
+        networks:
+            - meternet
+        volumes:
+            - ./src:/tmp:z
+
+    dlms-cim-meter2:
+        build:
+            context: src
+            target: demo
+        entrypoint: 
+            - /tmp/Metersim 
+            - "M1002"
+        expose:
+            - "4059/tcp"
+        networks:
+            - meternet
+        volumes:
+            - ./src:/tmp:z
+
+    dlms-cim-hes:
+        build:
+            context: src
+            target: demo
+        entrypoint: 
+            - /tmp/HESsim
+            - "8888"
+            - dlms-cim-meter1
+            - dlms-cim-meter2
+        expose:
+            - "8888/tcp"
+        networks:
+            - hesnet
+            - meternet
+        volumes:
+            - ./src:/tmp:z
+
+    dlms-cim-cis:
+        build:
+            context: src
+            target: demo
+        entrypoint: 
+            - /tmp/CISsim
+            - "http://dlms-cim-hes:8888"
+            - "http://dlms-cim-cis"
+        networks:
+            - hesnet
+        volumes:
+            - ./src:/tmp:z
+
+networks:
+    hesnet:
+    meternet:
+
+    

@@ -1,0 +1,4 @@
+FROM fedora:30 AS demo
+RUN dnf update -y \
+        && dnf install -y gsoap
+WORKDIR /tmp/
