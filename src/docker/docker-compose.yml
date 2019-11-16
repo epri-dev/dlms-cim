@@ -9,7 +9,6 @@ services:
         entrypoint: 
             - /tmp/Metersim 
             - "M1001"
-        stdin_open: true
         expose:
             - "4059/tcp"
         networks:
@@ -24,7 +23,6 @@ services:
         entrypoint: 
             - /tmp/Metersim 
             - "M1002"
-        stdin_open: true
         expose:
             - "4059/tcp"
         networks:
@@ -52,7 +50,6 @@ services:
             - "8888"
             - dlms-cim-meter1
             - dlms-cim-meter2
-        stdin_open: true
         expose:
             - "8888/tcp"
         networks:
