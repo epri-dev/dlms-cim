@@ -139,7 +139,7 @@ namespace EPRI
     {
         if (m_Connect)
         {
-            Base()->GetDebug()->TRACE("\n\nConnection from %s...\n\n", 
+            Base()->GetDebug()->TRACE("Connection from %s...\n", 
                 m_Socket.remote_endpoint().address().to_string().c_str());
             
             m_Connect(Error ? !SUCCESSFUL : SUCCESSFUL);
@@ -160,7 +160,7 @@ namespace EPRI
     {
         if (!Error && m_Connect)
         {
-            Base()->GetDebug()->TRACE("\n\nConnected to %s...\n\n",  
+            Base()->GetDebug()->TRACE("Connected to %s...\n",  
                 m_Socket.remote_endpoint().address().to_string().c_str());
             m_Connect(SUCCESSFUL);
         }

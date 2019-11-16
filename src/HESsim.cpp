@@ -104,24 +104,26 @@ class LinuxClientEngine : public COSEMClientEngine
 {
 public:
     LinuxClientEngine() = delete;
-    LinuxClientEngine(const Options& Opt, Transport * pXPort)
-        : COSEMClientEngine(Opt, pXPort)
+    LinuxClientEngine(const Options& Opt, Transport * pXPort) : 
+        pXPort(pXPort),
+        COSEMClientEngine(Opt, pXPort)
     {
     }
     virtual ~LinuxClientEngine()
     {
+        delete pXPort;
     }
     
     virtual bool OnOpenConfirmation(COSEMAddressType ServerAddress)
     {
-        Base()->GetDebug()->TRACE("\n\nAssociated with Server %d...\n\n",
+        Base()->GetDebug()->TRACE("Associated with Server %d...\n",
             ServerAddress);
         return true;
     }
 
     virtual bool OnGetConfirmation(RequestToken Token, const GetResponse& Response)
     {
-        Base()->GetDebug()->TRACE("\n\nGet Confirmation for Token %d...\n", Token);
+        Base()->GetDebug()->TRACE("Get Confirmation for Token %d...\n", Token);
         if (Response.ResultValid && Response.Result.which() == Get_Data_Result_Choice::data_access_result)
         {
             Base()->GetDebug()->TRACE("\tReturned Error Code %d...\n", 
@@ -172,7 +174,7 @@ public:
     
     virtual bool OnSetConfirmation(RequestToken Token, const SetResponse& Response)
     {
-        Base()->GetDebug()->TRACE("\n\nSet Confirmation for Token %d...\n", Token);
+        Base()->GetDebug()->TRACE("Set Confirmation for Token %d...\n", Token);
         if (Response.ResultValid)
         {
             Base()->GetDebug()->TRACE("\tResponse Code %d...\n", 
@@ -183,7 +185,7 @@ public:
 
     virtual bool OnActionConfirmation(RequestToken Token, const ActionResponse& Response)
     {
-        Base()->GetDebug()->TRACE("\n\nAction Confirmation for Token %d...\n", Token);
+        Base()->GetDebug()->TRACE("Action Confirmation for Token %d...\n", Token);
         if (Response.ResultValid)
         {
             Base()->GetDebug()->TRACE("\tResponse Code %d...\n", 
@@ -194,13 +196,13 @@ public:
     
     virtual bool OnReleaseConfirmation()
     {
-        Base()->GetDebug()->TRACE("\n\nRelease Confirmation from Server\n\n");
+        Base()->GetDebug()->TRACE("Release Confirmation from Server\n");
         return true;
     }
     
     virtual bool OnReleaseConfirmation(COSEMAddressType ServerAddress)
     {
-        Base()->GetDebug()->TRACE("\n\nRelease Confirmation from Server %d\n\n", ServerAddress);
+        Base()->GetDebug()->TRACE("Release Confirmation from Server %d\n", ServerAddress);
         return true;
     }
 
@@ -208,52 +210,49 @@ public:
     {
         if (INVALID_ADDRESS == ServerAddress)
         {
-            Base()->GetDebug()->TRACE("\n\nAbort Indication.  Not Associated.\n\n");
+            Base()->GetDebug()->TRACE("Abort Indication.  Not Associated.\n");
         }
         else
         {
-            Base()->GetDebug()->TRACE("\n\nAbort Indication from Server %d\n\n", ServerAddress);
+            Base()->GetDebug()->TRACE("Abort Indication from Server %d\n", ServerAddress);
         }
         return true;
     }
-
+private:
+    Transport * pXPort{nullptr};
 };
 
 LinuxBaseLibrary     bl;
 
 bool serviceConnect(bool reconnect, const std::string& meterURL) 
 {
-    bool success{false};
+    static constexpr int max_tries{40};
+    bool result{false};
     // composed of:
     // A. TCP connect
-    int         SourceAddress = 1; //GetNumericInput("Client Address (Default: 1)", 1);
-    ISocket *                       m_pSocket = nullptr;
+    int SourceAddress = 1; //GetNumericInput("Client Address (Default: 1)", 1);
+    ISocket* m_pSocket = nullptr;
 
-    auto m_pClientEngine = new LinuxClientEngine(COSEMClientEngine::Options(SourceAddress), 
-        new TCPWrapper((m_pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_CLIENT, LinuxIP::Options::VERSION4)))));
+    LinuxClientEngine m_pClientEngine{COSEMClientEngine::Options(SourceAddress), 
+        new TCPWrapper((m_pSocket = Base()->GetCore()->GetIP()->CreateSocket(LinuxIP::Options(LinuxIP::Options::MODE_CLIENT, LinuxIP::Options::VERSION4))))};
     if (SUCCESSFUL != m_pSocket->Open(meterURL.c_str()))
     {
         std::cout << "Failed to initiate connect to " << meterURL << "\n";
-        return success;
+        return result;
     }
         // 1. COSEM Open
-    int tries{400};
+    int tries{max_tries};
     do {
         bl.get_io_service().poll();
-        if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsTransportConnected()) 
+        if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine.IsTransportConnected()) 
         {
-            bool                 Send = true;
-            int                  DestinationAddress = 1; //GetNumericInput("Server Address (Default: 1)", 1);
+            bool Send = true;
+            int DestinationAddress = 1; 
             COSEMSecurityOptions::SecurityLevel Security = COSEMSecurityOptions::SECURITY_NONE;
-           // (COSEMSecurityOptions::SecurityLevel)
-                //GetNumericInput("Security Level [0 - None, 1 - Low, 2 - High] (Default: 0)", COSEMSecurityOptions::SECURITY_NONE);
             COSEMSecurityOptions SecurityOptions; 
-            //
-            // Only supports LN at this time
-            //
             SecurityOptions.ApplicationContextName = SecurityOptions.ContextLNRNoCipher;
-            size_t APDUSize = 640; // GetNumericInput("APDU Size (Default: 640)", 640);
-            m_pClientEngine->Open(DestinationAddress,
+            size_t APDUSize = 640; 
+            m_pClientEngine.Open(DestinationAddress,
                                   SecurityOptions, 
                                   xDLMS::InitiateRequest(APDUSize));
         }
@@ -262,11 +261,11 @@ bool serviceConnect(bool reconnect, const std::string& meterURL)
             // std::cout << "Transport Connection Not Established Yet!\n";
             --tries;
         }
-    } while (!(m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsTransportConnected()) && tries > 0);
+    } while (!(m_pSocket && m_pSocket->IsConnected() && m_pClientEngine.IsTransportConnected()) && tries > 0);
     if (tries <= 0) {
-        return success;
+        return result;
     }
-    tries = 400;
+    tries = max_tries;
         // 4. COSEM Action
         //  class ID = 70
         //  method = 1 (disconnect)
@@ -275,7 +274,7 @@ bool serviceConnect(bool reconnect, const std::string& meterURL)
     COSEMClientEngine::RequestToken m_ActionToken; 
     do {
         bl.get_io_service().poll();
-        if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsOpen())
+        if (m_pSocket && m_pSocket->IsConnected() && m_pClientEngine.IsOpen())
         {
             Cosem_Method_Descriptor Descriptor;
 
@@ -284,7 +283,7 @@ bool serviceConnect(bool reconnect, const std::string& meterURL)
             if (Descriptor.instance_id.Parse("0-0:96.3.10*255"))
             {
                 COSEMType MyData(COSEMDataType::INTEGER, 1); 
-                if (m_pClientEngine->Action(Descriptor,
+                if (m_pClientEngine.Action(Descriptor,
                                         DLMSOptional<DLMSVector>(MyData),
                                         &m_ActionToken))
                 {
@@ -302,10 +301,10 @@ bool serviceConnect(bool reconnect, const std::string& meterURL)
             --tries;
         }
         
-    } while (!(m_pSocket && m_pSocket->IsConnected() && m_pClientEngine->IsOpen()) && tries > 0);
+    } while (!(m_pSocket && m_pSocket->IsConnected() && m_pClientEngine.IsOpen()) && tries > 0);
         // 5. COSEM Disconnect
     {
-        if (!m_pClientEngine->Release(xDLMS::InitiateRequest()))
+        if (!m_pClientEngine.Release(xDLMS::InitiateRequest()))
         {
             std::cout << "Problem submitting COSEM Release!\n";
         }
@@ -317,14 +316,14 @@ bool serviceConnect(bool reconnect, const std::string& meterURL)
             Base()->GetCore()->GetIP()->ReleaseSocket(m_pSocket);
             m_pSocket = nullptr;
             std::cout << "Socket released.\n";
-            success = true;
+            result = true;
         }
         else
         {
             std::cout << "TCP Not Opened!\n";
         }
     }
-    return success;
+    return result;
 }
 
 std::vector<std::string> meters{};

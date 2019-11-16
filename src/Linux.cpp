@@ -207,14 +207,14 @@ public:
     
     virtual bool OnOpenConfirmation(COSEMAddressType ServerAddress)
     {
-        Base()->GetDebug()->TRACE("\n\nAssociated with Server %d...\n\n",
+        Base()->GetDebug()->TRACE("Associated with Server %d...\n",
             ServerAddress);
         return true;
     }
 
     virtual bool OnGetConfirmation(RequestToken Token, const GetResponse& Response)
     {
-        Base()->GetDebug()->TRACE("\n\nGet Confirmation for Token %d...\n", Token);
+        Base()->GetDebug()->TRACE("Get Confirmation for Token %d...\n", Token);
         if (Response.ResultValid && Response.Result.which() == Get_Data_Result_Choice::data_access_result)
         {
             Base()->GetDebug()->TRACE("\tReturned Error Code %d...\n", 
@@ -265,7 +265,7 @@ public:
     
     virtual bool OnSetConfirmation(RequestToken Token, const SetResponse& Response)
     {
-        Base()->GetDebug()->TRACE("\n\nSet Confirmation for Token %d...\n", Token);
+        Base()->GetDebug()->TRACE("Set Confirmation for Token %d...\n", Token);
         if (Response.ResultValid)
         {
             Base()->GetDebug()->TRACE("\tResponse Code %d...\n", 
@@ -276,7 +276,7 @@ public:
 
     virtual bool OnActionConfirmation(RequestToken Token, const ActionResponse& Response)
     {
-        Base()->GetDebug()->TRACE("\n\nAction Confirmation for Token %d...\n", Token);
+        Base()->GetDebug()->TRACE("Action Confirmation for Token %d...\n", Token);
         if (Response.ResultValid)
         {
             Base()->GetDebug()->TRACE("\tResponse Code %d...\n", 
@@ -287,13 +287,13 @@ public:
     
     virtual bool OnReleaseConfirmation()
     {
-        Base()->GetDebug()->TRACE("\n\nRelease Confirmation from Server\n\n");
+        Base()->GetDebug()->TRACE("Release Confirmation from Server\n");
         return true;
     }
     
     virtual bool OnReleaseConfirmation(COSEMAddressType ServerAddress)
     {
-        Base()->GetDebug()->TRACE("\n\nRelease Confirmation from Server %d\n\n", ServerAddress);
+        Base()->GetDebug()->TRACE("Release Confirmation from Server %d\n", ServerAddress);
         return true;
     }
 
@@ -301,11 +301,11 @@ public:
     {
         if (INVALID_ADDRESS == ServerAddress)
         {
-            Base()->GetDebug()->TRACE("\n\nAbort Indication.  Not Associated.\n\n");
+            Base()->GetDebug()->TRACE("Abort Indication.  Not Associated.\n");
         }
         else
         {
-            Base()->GetDebug()->TRACE("\n\nAbort Indication from Server %d\n\n", ServerAddress);
+            Base()->GetDebug()->TRACE("Abort Indication from Server %d\n", ServerAddress);
         }
         return true;
     }
@@ -349,7 +349,7 @@ protected:
     {
         const DLIdentifyResponseParameter& Response = 
             dynamic_cast<const DLIdentifyResponseParameter&>(Parameters);
-        Base()->GetDebug()->TRACE("\n\nIdentify Response (%d, %d, %d, %d)...\n\n",
+        Base()->GetDebug()->TRACE("Identify Response (%d, %d, %d, %d)...\n",
             Response.SuccessCode, Response.ProtocolID, Response.ProtocolVersion, 
             Response.ProtocolRevision);
         return true;
@@ -359,7 +359,7 @@ protected:
     {
         const DLDisconnectConfirmOrResponse& Response = 
             dynamic_cast<const DLDisconnectConfirmOrResponse&>(Parameters);
-        Base()->GetDebug()->TRACE("\n\nDisconnect Response from Server %d...\n\n",
+        Base()->GetDebug()->TRACE("Disconnect Response from Server %d...\n",
             Response.DestinationAddress.LogicalAddress());
 
         Base()->GetCore()->GetSerial()->ReleaseSocket(m_pSerialSocket);
