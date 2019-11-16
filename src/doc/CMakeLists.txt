@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.1)
-
 find_package(Doxygen)
 set(MD_SOURCES intro.md design.md using.md building.md)
 if(DOXYGEN_FOUND)
