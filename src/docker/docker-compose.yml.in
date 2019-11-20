@@ -58,7 +58,19 @@ services:
         volumes:
             - ./src:/tmp:z
 
+    dlms-cim-docs:
+        build:
+            context: doc/html
+            target: docserver
+        ports:
+                - "8080:80"
+        networks:
+            - docnet
+        volumes:
+            - ./doc/html:/usr/share/nginx/html:z
+
 networks:
+    docnet:
     hesnet:
     meternet:
 
