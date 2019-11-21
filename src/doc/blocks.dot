@@ -1,0 +1,18 @@
+graph blocks {
+    edge [dir="both"];
+    subgraph cluster_all {
+        label = "simulated network";
+        subgraph cluster_meters {
+            label = "meters";
+            {rank=same meter1 meter2}
+            meter1;
+            meter2;
+        }
+        HES;
+        CIS;
+    }
+    docserver;
+    meter1 -- HES [label="meternet\n(DLMS)"];
+    meter2 -- HES [label="meternet\n(DLMS)"];
+    HES -- CIS [label="hesnet\n(CIM)"];
+}

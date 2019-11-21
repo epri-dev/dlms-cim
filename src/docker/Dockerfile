@@ -10,7 +10,8 @@ RUN dnf update -y \
         doxygen graphviz texlive-latex texlive-tabu texlive-linegoal texlive-multirow \
         texlive-hanging texlive-adjustbox texlive-stackengine texlive-listofitems \
         texlive-ulem texlive-wasysym texlive-collection-fontsrecommended \
-        texlive-sectsty texlive-fancyhdr texlive-natbib texlive-tocloft
+        texlive-sectsty texlive-fancyhdr texlive-natbib texlive-tocloft \
+        texlive-newunicodechar texlive-etoc
 
 WORKDIR /tmp/
 # When the software repository is no longer private, this will work 
