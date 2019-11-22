@@ -43,6 +43,4 @@ The advantage is that if the container images have already been built, `docker-c
 
 ## Further reading
 
-[**Introduction**](index.html)
-
 [How to use the software](@ref using)

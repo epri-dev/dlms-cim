@@ -1,4 +1,4 @@
-# Design {#design}
+# How to modify the software {#design}
 The software is composed of a number of pieces, which together make up the simulation.  The components are:
 
     - Meter simulator(s)

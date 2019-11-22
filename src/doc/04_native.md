@@ -63,6 +63,6 @@ This is how to create the original `dlms-cim-1.0.0-Source.tar.gz` is created.
 
 This simply removes all of the built targets and intermediate files to prepare for a fresh build.
 
-[Introduction](index.html)
+## Further reading
 
-[How to use the software](@ref using)
+[How to modify the software](@ref design)

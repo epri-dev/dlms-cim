@@ -1,6 +1,6 @@
 # How to use this software # {#using}
 
-Before the software is run, it will need to be built, which is described in [How to build this software](@ref building) and in `[Native Linux build](@ref native).
+Before the software is run, it will need to be built, which is described in [How to build this software](@ref building) and in [Native Linux build](@ref native).
 
 There are essentially two main ways to use this software.  The easy method is to run the software in containers using Docker.  The alternative method is to run the software in multiple separate windows on a computer equipped with the Linux operating system.  Each of these will be described below.  
 
