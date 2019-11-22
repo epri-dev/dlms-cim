@@ -21,14 +21,13 @@ This extracts some files from within the archive to the same directory.  Next is
 
 This will download a base Docker image and install all required tools (to the image, and not to your host computer).  This may take many minutes depending on the speed of your internet connection and computer.  Eventually the build process will be complete and Docker will run five containers.  The last few lines of that should look something like this:
 
-    Successfully tagged fresh_dlms-cim-cis:latest
-    Creating fresh_dlms-cim-hes_1    ... done
-    Creating fresh_dlms-cim-meter1_1 ... done
-    Creating fresh_dlms-cim-docs_1   ... done
-    Creating fresh_dlms-cim-cis_1    ... done
-    Creating fresh_dlms-cim-meter2_1 ... done
+    Successfully tagged docker_dlms-cim-cis:latest
+    Creating docker_dlms-cim-hes_1    ... done
+    Creating docker_dlms-cim-meter1_1 ... done
+    Creating docker_dlms-cim-docs_1   ... done
+    Creating docker_dlms-cim-cis_1    ... done
+    Creating docker_dlms-cim-meter2_1 ... done
         
-In this case, the directory name happened to be `fresh` so each of the containers is prefixed with that name.  If you named your directory differently, it will use the name of your directory instead.
 
 ### Alternative approach
 One can also perform the build and run steps separately with `docker-compose`.  The effect is the same, but instead of this:

@@ -1,4 +1,4 @@
-# Design
+# Design {#design}
 The software is composed of a number of pieces, which together make up the simulation.  The components are:
 
     - Meter simulator(s)
@@ -8,13 +8,28 @@ The software is composed of a number of pieces, which together make up the simul
 Each of the components is described in more detail below.
 
 ## Meter simulator
+The meter simulator uses the EPRI DLMS/COSEM library and contains a small collection of standard COSEM objects.  The objects include a `Clock` component and a `Disconnect` object.  The simulator is intended to simulate only network traffic rather than a real device, so the objects exist but the functionality and the data in them is not, and is not intended to be realistic.  The meter simulator listens on the standard DLMS/COSEM port of 4059.
 
 ## HES simulator
+The Head-End System simulator has three roles:
 
-## MDMS simulator
+  1. it listens for CIM requests
+  2. it translates CIM requests into DLMS (and the reverse)
+  3. it communicates with meters
 
+At the moment, the simulator only listens for service disconnect and reconnect messages.
+
+## CIS simulator
+The Customer Information System simulator does only one thing, which is to send CIM service disconnect and service reconnect messages to the HES simulator.
+
+## CIM design
+The CIM component uses the gSOAP library to simplify the handling of SOAP requests that conform to the CIM standard XML schema.  The schema files are in a `xsd` subdirectory and the Web Service Definition Language (WSDL) file is in the `wsdl` subdirectory.  These components are transformed automatically by gSOAP into C++ code that can then be used by this set of programs.  Simplified versions of just the CIM portion (that is, no meter communications or DLMS) are implemented in two simplified test programs called `disconnectclient` and `disconnectserver`.  Their sole purpose is as an illustration to how that portion of the communications works and they will not be mentioned further in this document.
+
+Simply by adding the appropriate wsdl and xsd files, one can quickly create new code to implement other CIM message types.
 
 ## How to add a COSEM object
+One obvious thing that one might want to do if one is adding new CIM message types is to also add the corresponding COSEM object or objects to the meter simulator.
+
 Adding a new COSEM object to the code is best done in a series of steps, starting with an existing class.  For this explanation, we will add the Image Transfer class (`class_id` = 18) based on the code for the `LinuxDisconnect` object.
 
  1. Copy the `LinuxDisconnect` files.  In this case, copy `LinuxDisconnect.cpp` to `LinuxImageTransfer.cpp` and `include/LinuxDisconnect.h` to `include/LinuxImageTransfer.h`

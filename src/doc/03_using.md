@@ -27,43 +27,29 @@ This lists the networks.  The output is something like this:
 
     NETWORK ID          NAME                DRIVER              SCOPE
     16e623d9c484        bridge              bridge              local
-    8213d05fb50b        build_docnet        bridge              local
-    a2f443e2ec64        build_hesnet        bridge              local
-    bc77c8ac85ea        build_meternet      bridge              local
+    7645e1d21c80        docker_docnet       bridge              local
+    3b8a0b25952e        docker_hesnet       bridge              local
+    6690d3b8e9ac        docker_meternet     bridge              local
     40b82e199c11        host                host                local
     87a1d2962ff9        none                null                local
 
-The `bridge`, `host` and `none` networks are defaults created by Docker and we can ignore these for now.  The important ones are `build_hesnet` and `build_meternet`.  The `build_docnet` does not interact with the others and is solely used as a convenient way to separate the web server that provides this documentation.
+The `bridge`, `host` and `none` networks are defaults created by Docker and we can ignore these for now.  The important ones are `docker_hesnet` and `docker_meternet`.  The `docker_docnet` does not interact with the others and is solely used as a convenient way to separate the web server that provides this documentation.
 
+These network ID numbers are also used by Wireshark.  If we open Wireshark and examine the available capture interfaces, we should see a list that includes devices name `br-3b8a0b25952e` which is the virtual bridge that is associated with the `docker_hesnet` network and `br-6690d3b8e9ac` which corresponds with the `docker_meternet` network.  If we select both of these capture interfaces and start a capture, we might see something like that shown in the picture below.
 
+@image html Wireshark1.png "Wireshark screen shot"
+@image latex Wireshark1.png "Wireshark screen shot" width=\textwidth
 
-This procedure will not be described in detail here, but typically the Docker software will create virtual Ethernet interfaces (identifiable in Wireshark under Linux because the interface names begin with "virt") which Wireshark can then monitor.  It is useful and instructive to observe the formatting and timing of the various communications to gain insight into how a real system operates.
+We can see that the CIM request in packet 7 (encapsulated in HTTP/XML message) was sent by 192.168.192.2 (the simulated CIS) to 192.168.192.3 (simulated HES).  We can also see that the HES starts to send out a dlms-cosem message in response in packet 24 from 192.168.160.4 (the HES on the `meternet` side) to 192.168.160.3 (this is one of the simulated meters).  We can see that they are different networks, as would be the case in the real world, and that each device has its own IP address.  
 
+There are, however, some unrealistic aspects to the simulation.  In particular, the order that packets are delivered to Wireshark is not always the same order that they would actually appear on a real network.  The result is that the packets can appear to be out of order or duplicated.  This is because the simulated network has unrealistically low latency and Wireshark doesn't actually necessarily get the packets in the order they are actually sent.  For example, in this particular trace, the first 31 packets all arrive within one millisecond.  To mostly correct this, we can sort on the time column by clicking on the column header in Wireshark.  There still we be some apparent duplicate packets, but the ordering should be mostly correct.
+
+### Stopping the software
 Stopping the software, if run in this way, is simply a matter of using the `Ctrl-C` key combination to shut down docker-compose.  The software will gracefully perform the shutdown steps before returning to the command line prompt.  To also remove the virtual networks, one can run `docker-compose down` afterwards.
 
-### Running ###
 
+## Further reading
 
-```
-#!/bin/bash
-cp ../61968-9/target/61968-9.war .
-cp ../61968-5/target/61968-5.war .
-cp ../61968-6/target/61968-6.war .
-cp ../sql/derms2full_10182018.mysql .
-docker build -t epri/semantic-test-harness:v2 .
-```
+[Adapting the software](@ref design)
 
-The last line of the file invokes the `docker build` command.  It copies the relevant files to the Docker daemon and creates an image file.  It will download some packages to install on the image (but *not* on your hard drive!)  and execute all of the steps to create the image.
-
-## Running the image ##
-If the previous steps were followed and worked correctly, the result should be a runnable Docker image file.  Running the image can be done in single command:
-
-    docker run -p 8080:8080 epri/semantic-test-harness:v2
-
-This will, in the Docker container, initialize the MySQL database and run the WSDL software.
-
-One can verify that this is working by navigating in a browser window to http://localhost:8080/61968-9  This should show a table of available web services with their associated message names.  Clicking on one of the test names should then show the associated wsdl.
-
-### Running the GUI ### 
-The GUI may then be run from the local host as usual.  This is described under the section heading "install ruby/rails" on https://github.com/epri-dev/Semantic-Test-Harness/wiki/Installation-and-Setup
-
+[Native Linux build](@ref native)
