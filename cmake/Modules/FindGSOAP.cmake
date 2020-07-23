@@ -133,7 +133,7 @@ string(REGEX MATCH "[0-9]*\\.[0-9]*\\.[0-9]*" GSOAP_VERSION ${GSOAP_STRING_VERSI
 # -----------------------------------------------------
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
-    gsoap 
+    GSOAP 
     DEFAULT_MSG 
     GSOAP_CXX_LIBRARIES 
     GSOAP_C_LIBRARIES
