@@ -12,7 +12,12 @@ services:
         expose:
             - "4059/tcp"
         networks:
-            - meternet
+            meternet:
+                ipv6_address: "2001:3200:3200::101"
+        sysctls:
+          net.ipv6.conf.all.disable_ipv6: 0
+          net.ipv6.conf.all.forwarding: 1
+
 
     dlms-cim-meter2:
         build:
@@ -26,7 +31,11 @@ services:
         expose:
             - "4059/tcp"
         networks:
-            - meternet
+            meternet:
+                ipv6_address: "2001:3200:3200::102"
+        sysctls:
+          net.ipv6.conf.all.disable_ipv6: 0
+          net.ipv6.conf.all.forwarding: 1
 
     dlms-cim-docs:
         build:
@@ -53,8 +62,12 @@ services:
         expose:
             - "8888/tcp"
         networks:
-            - hesnet
-            - meternet
+            hesnet:
+            meternet:
+                ipv6_address: "2001:3200:3200::4"
+        sysctls:
+          net.ipv6.conf.all.disable_ipv6: 0
+          net.ipv6.conf.all.forwarding: 1
 
     dlms-cim-cis:
         build:
@@ -66,6 +79,8 @@ services:
             - /tmp/CISsim
             - "http://dlms-cim-hes:8888"
             - "http://dlms-cim-cis"
+        depends_on:
+            - dlms-cim-hes
         networks:
             - hesnet
 
@@ -73,3 +88,12 @@ networks:
     docnet:
     hesnet:
     meternet:
+        enable_ipv6: true
+        driver: bridge
+        driver_opts:
+            com.docker.network.bridge.enable_icc: 'true'
+        ipam:
+            driver: default
+            config:
+                - subnet: 2001:3200:3200::/64
+
