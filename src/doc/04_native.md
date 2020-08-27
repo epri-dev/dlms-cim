@@ -1,9 +1,9 @@
 # Native Linux build {#native} #
 
-As mentioned in the description of [How to use this software](@ref using), there are two basic ways in which the software can be run and built.  The easy method is to build and run the software in containers using Docker.  See [How to build the software](@ref building) for that version.  The alternative method described here is to build and run the software in multiple separate windows on a computer equipped with the Linux operating system.  As with the Docker version of the build instructions, these instructions are described in terms of running a *version 30 (or later) of a Fedora distribution of Linux*.
+As mentioned in the description of [How to use this software](@ref using), there are two basic ways in which the software can be run and built.  The easy method is to build and run the software in containers using Docker.  See [How to build the software](@ref building) for that version.  The alternative method described here is to build and run the software in multiple separate windows on a computer equipped with the Linux operating system.  As with the Docker version of the build instructions, these instructions are described in terms of running a *version 32 (or later) of a Fedora distribution of Linux*.
 
 ## Prerequisites ##
-To build the software on a computer running Fedora version 30, a number of packages need to be installed first.  It's also recommended to update existing packages to the latest versions before beginneing.  To quickly install all packages necessary for building both the software and the documentation, execute the following command:
+To build the software on a computer running Fedora version 32, a number of packages need to be installed first.  It's also recommended to update existing packages to the latest versions before beginneing.  To quickly install all packages necessary for building both the software and the documentation, execute the following command:
 
 
     sudo dnf update -y \

@@ -1,4 +1,4 @@
-FROM fedora:30 AS builder
+FROM fedora:32 AS builder
 ARG projectsourcename
 
 LABEL maintainer="Ed Beroset <beroset@ieee.org>"
@@ -7,7 +7,7 @@ LABEL maintainer="Ed Beroset <beroset@ieee.org>"
 # with doxygen are only needed to generate the documentation.
 RUN dnf update -y \
         && dnf install -y gcc gcc-c++ make gsoap gsoap-devel git cmake unzip \
-        doxygen graphviz texlive-latex texlive-tabu texlive-linegoal texlive-multirow \
+        doxygen graphviz texlive-latex texlive-linegoal texlive-multirow \
         texlive-hanging texlive-adjustbox texlive-stackengine texlive-listofitems \
         texlive-ulem texlive-wasysym texlive-collection-fontsrecommended \
         texlive-sectsty texlive-fancyhdr texlive-natbib texlive-tocloft \
@@ -30,7 +30,7 @@ COPY --from=builder /tmp/dlms-cim/build/doc/html/ /usr/share/nginx/html
 COPY --from=builder /tmp/dlms-cim/build/doc/latex/refman.pdf /usr/share/nginx/html/dlms-cim.pdf
 COPY default.conf /etc/nginx/conf.d/default.conf
 
-FROM fedora:30 AS demo
+FROM fedora:32 AS demo
 RUN dnf update -y \
         && dnf install -y gsoap
 WORKDIR /tmp/

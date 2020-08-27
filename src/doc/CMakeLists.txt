@@ -1,4 +1,4 @@
-find_package(Doxygen)
+find_package(Doxygen 1.8.16)
 set(MD_SOURCES 01_intro.md 02_building.md 03_using.md 04_native.md 05_design.md )
 set(IMAGE_PATH "images")
 set(DEST_IMAGE_PATH "${CMAKE_BINARY_DIR}/${IMAGE_PATH}")
