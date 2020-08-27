@@ -13,10 +13,8 @@ services:
             - "4059/tcp"
         networks:
             meternet:
-                ipv6_address: "2001:3200:3200::101"
         sysctls:
           net.ipv6.conf.all.disable_ipv6: 0
-          net.ipv6.conf.all.forwarding: 1
 
 
     dlms-cim-meter2:
@@ -32,10 +30,8 @@ services:
             - "4059/tcp"
         networks:
             meternet:
-                ipv6_address: "2001:3200:3200::102"
         sysctls:
           net.ipv6.conf.all.disable_ipv6: 0
-          net.ipv6.conf.all.forwarding: 1
 
     dlms-cim-docs:
         build:
@@ -64,10 +60,8 @@ services:
         networks:
             hesnet:
             meternet:
-                ipv6_address: "2001:3200:3200::4"
         sysctls:
           net.ipv6.conf.all.disable_ipv6: 0
-          net.ipv6.conf.all.forwarding: 1
 
     dlms-cim-cis:
         build:
@@ -83,6 +77,8 @@ services:
             - dlms-cim-hes
         networks:
             - hesnet
+        sysctls:
+          net.ipv6.conf.all.disable_ipv6: 1
 
 networks:
     docnet:
@@ -90,8 +86,6 @@ networks:
     meternet:
         enable_ipv6: true
         driver: bridge
-        driver_opts:
-            com.docker.network.bridge.enable_icc: 'true'
         ipam:
             driver: default
             config:
